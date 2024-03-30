@@ -1,0 +1,16 @@
+@startuml диаграмма развёртывания
+
+cloud "Timeweb Cloud" {
+    package "Docker compose" {
+        component "Nginx Proxy" as nginx
+        component "Flutter Frontend" as front
+        component "Java Spring Boot Backend" as back
+        component "Jobeinabox Sandbox" as jobe
+    }
+}
+
+nginx -- front : https
+front -- back
+back -- jobe
+
+@enduml
