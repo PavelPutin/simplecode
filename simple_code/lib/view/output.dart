@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
-import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:highlight/languages/yaml.dart';
 import 'package:highlight/languages/xml.dart';
 
@@ -14,24 +14,30 @@ class Output extends StatefulWidget {
 class _OutputState extends State<Output> {
   int _showingOutput = 0;
   final CodeController _yamlController =
-      CodeController(text: "yaml doc:\n  status: 'cool'"*300, language: yaml);
+      CodeController(text: "yaml doc:\n  status: 'cool'\n" * 300, language: yaml);
   final CodeController _moodleXmlController =
-      CodeController(text: "<tagName>moodle xml doc</tagName>", language: xml);
+      CodeController(text: "<tagName>moodle xml doc</tagName>\n" * 300, language: xml);
 
   @override
   Widget build(BuildContext context) {
     var outputs = [
-      CodeField(
+      TextField(
         controller: _yamlController,
+        maxLines: null,
       ),
-      CodeField(controller: _moodleXmlController)
+      TextField(
+        controller: _moodleXmlController,
+        maxLines: null,
+      )
     ];
 
     return Column(
       children: [
         Row(
           children: [
-            Text("Hello"),
+            TextButton(onPressed: _showYamlOutput, child: const Text("yaml")),
+            TextButton(
+                onPressed: _showMoodleXMLOutput, child: const Text("MoodleXML"))
           ],
         ),
         Expanded(
@@ -44,8 +50,10 @@ class _OutputState extends State<Output> {
                   children: <Widget>[
                     Expanded(
                         child: SizedBox(
-                          width: double.infinity,
-                          child: CodeTheme(data: CodeThemeData(styles: monokaiSublimeTheme), child: TextField(maxLines: null, controller: _yamlController)),
+                      width: double.infinity,
+                      child: CodeTheme(
+                          data: CodeThemeData(styles: monokaiTheme),
+                          child: outputs[_showingOutput]),
                     )),
                   ],
                 ),
