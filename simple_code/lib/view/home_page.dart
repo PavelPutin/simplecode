@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/view/output.dart';
+import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -43,12 +45,12 @@ class _HomePageState extends State<HomePage> {
               Container(
                 margin: const EdgeInsets.only(bottom: 8.0),
                 child: OutlinedButton(
-                  onPressed: _importYamlFile,
+                  onPressed: () => _importYamlFile(context),
                   child: const Text('Импортировать yaml файл'),
                 ),
               ),
               OutlinedButton(
-                onPressed: _closeDrawer,
+                onPressed: () => _downloadYamlFile(context),
                 child: const Text('Импортировать MoodleXml файл'),
               ),
               const Spacer(),
@@ -66,14 +68,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _importYamlFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+  Future<void> _importYamlFile(BuildContext context) async {
+    context.read<SimpleCodeViewModel>().openYamlFile();
+  }
 
-    if (result != null) {
-      File file = File(result.files.single.path!);
-      
-    } else {
-      // User canceled the picker
-    }
+  Future<void> _downloadYamlFile(BuildContext context) async {
+    context.read<SimpleCodeViewModel>().downloadYamlFile();
   }
 }
