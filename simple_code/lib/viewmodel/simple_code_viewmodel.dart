@@ -24,10 +24,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       Uint8List fileBytes = result.files.first.bytes!;
       String input = utf8.decode(fileBytes);
-      input = input.replaceAll("Квадр", "Трипл");
 
-      final base64Url = base64UrlEncode(utf8.encode(input));
-      final anchor = html.AnchorElement(href: base64Url);
+      final base64 = base64Encode(utf8.encode(input));
+      final anchor = html.AnchorElement(href: 'data:application/octet-stream;base64,$base64');
       anchor.download = fileName;
       anchor.click();
       anchor.remove();
