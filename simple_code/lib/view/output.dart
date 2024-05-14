@@ -14,7 +14,7 @@ class Output extends StatefulWidget {
 class _OutputState extends State<Output> {
   int _showingOutput = 0;
   final CodeController _yamlController =
-      CodeController(text: "yaml doc: 'cool'", language: yaml);
+      CodeController(text: "yaml doc:\n  status: 'cool'"*300, language: yaml);
   final CodeController _moodleXmlController =
       CodeController(text: "<tagName>moodle xml doc</tagName>", language: xml);
 
@@ -27,22 +27,29 @@ class _OutputState extends State<Output> {
       CodeField(controller: _moodleXmlController)
     ];
 
-    return CustomScrollView(
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Column(
-            children: <Widget>[
-              const Text('Header'),
-              Expanded(
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: CodeTheme(
-                      data: CodeThemeData(styles: monokaiSublimeTheme),
-                      child: outputs[0],
-                    ),
-              )),
-              const Text('Footer'),
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text("Hello"),
+          ],
+        ),
+        Expanded(
+          flex: 1,
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: CodeTheme(data: CodeThemeData(styles: monokaiSublimeTheme), child: TextField(maxLines: null, controller: _yamlController)),
+                    )),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
