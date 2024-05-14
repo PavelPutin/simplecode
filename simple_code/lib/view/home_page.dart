@@ -29,12 +29,10 @@ class _HomePageState extends State<HomePage> {
       key: _scaffoldKey,
       appBar: AppBar(title: Text(widget.title)),
       body: const SizedBox.expand(
-        child: Row(
-          children: [
-            Expanded(flex: 1, child: TaskForm()),
-            Expanded(flex:1, child: Output()),
-          ]
-        ),
+        child: Row(children: [
+          Expanded(flex: 1, child: TaskForm()),
+          Expanded(flex: 1, child: Output()),
+        ]),
       ),
       drawer: Drawer(
         child: Padding(
@@ -69,7 +67,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _importYamlFile(BuildContext context) async {
-    context.read<SimpleCodeViewModel>().openYamlFile();
+    context.read<SimpleCodeViewModel>().openYamlFile()
+      .onError((error, stackTrace) => print("Не могу загрузить файл"));
   }
 
   Future<void> _downloadYamlFile(BuildContext context) async {

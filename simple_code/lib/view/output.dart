@@ -3,6 +3,8 @@ import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:highlight/languages/yaml.dart';
 import 'package:highlight/languages/xml.dart';
+import 'package:provider/provider.dart';
+import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class Output extends StatefulWidget {
   const Output({super.key});
@@ -30,6 +32,8 @@ class _OutputState extends State<Output> {
         maxLines: null,
       )
     ];
+
+    _yamlController.text = context.watch<SimpleCodeViewModel>().YamlData;
 
     return Column(
       children: [
