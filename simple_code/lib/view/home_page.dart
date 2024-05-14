@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/view/output.dart';
@@ -40,7 +43,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 margin: const EdgeInsets.only(bottom: 8.0),
                 child: OutlinedButton(
-                  onPressed: _closeDrawer,
+                  onPressed: _importYamlFile,
                   child: const Text('Импортировать yaml файл'),
                 ),
               ),
@@ -61,5 +64,16 @@ class _HomePageState extends State<HomePage> {
       // Disable opening the drawer with a swipe gesture.
       drawerEnableOpenDragGesture: false,
     );
+  }
+
+  Future<void> _importYamlFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      File file = File(result.files.single.path!);
+      
+    } else {
+      // User canceled the picker
+    }
   }
 }
