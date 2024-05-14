@@ -7,7 +7,7 @@ class TaskForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey,
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Форма ввода привет"),

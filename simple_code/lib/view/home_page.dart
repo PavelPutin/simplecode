@@ -23,8 +23,8 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(title: Text(widget.title)),
-      body: SizedBox.expand(
-        child: const Row(
+      body: const SizedBox.expand(
+        child: Row(
           children: [
             Expanded(flex: 1, child: TaskForm()),
             Expanded(flex:1, child: Output()),
