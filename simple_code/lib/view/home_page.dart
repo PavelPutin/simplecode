@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               OutlinedButton(
-                onPressed: () => _downloadYamlFile(context),
+                onPressed: () => _importXmlFile(context),
                 child: const Text('Импортировать MoodleXml файл'),
               ),
               const Spacer(),
@@ -73,5 +73,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _downloadYamlFile(BuildContext context) async {
     context.read<SimpleCodeViewModel>().downloadYamlFile();
+  }
+
+  Future<void> _importXmlFile(BuildContext context) async {
+    context.read<SimpleCodeViewModel>().openXmlFile()
+        .onError((error, stackTrace) => print("Не могу загрузить xml файл"));
   }
 }

@@ -34,6 +34,7 @@ class _OutputState extends State<Output> {
     ];
 
     _yamlController.text = context.watch<SimpleCodeViewModel>().YamlData;
+    _moodleXmlController.text = context.watch<SimpleCodeViewModel>().MoodleXmlData;
 
     return Column(
       children: [
