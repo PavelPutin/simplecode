@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_highlight/theme_map.dart';
+import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:highlight/highlight.dart';
 import 'package:highlight/languages/java.dart';
@@ -128,6 +129,25 @@ class _TaskFormState extends State<TaskForm> {
                           ],
                         ),
                       ),
+                      TextFormField(
+                        controller: gradeController,
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), labelText: "Оценка*"),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Обязательное поле";
+                          }
+                          if (int.tryParse(value) == null) {
+                            return "Оценка должна быть целым числом";
+                          }
+
+                          if (int.parse(value) <= 0) {
+                            return "Оценка должан быть больше нуля";
+                          }
+
+                          return null;
+                        },
+                      ),
                       ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate() &&
@@ -145,7 +165,7 @@ class _TaskFormState extends State<TaskForm> {
                           }
                         },
                         child: const Text('Создать задачу'),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -174,7 +194,7 @@ class NameTextField extends StatelessWidget {
           border: OutlineInputBorder(), labelText: "Название*"),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return "Название не может быть пустым";
+          return "Обязательное поле";
         }
         return null;
       },
