@@ -15,9 +15,17 @@ class Output extends StatefulWidget {
 
 class _OutputState extends State<Output> {
   final CodeController _yamlController =
-      CodeController(text: "yaml doc:\n  status: 'cool'\n" * 300, language: yaml);
+      CodeController(language: yaml);
   final CodeController _moodleXmlController =
-      CodeController(text: "<tagName>moodle xml doc</tagName>\n" * 300, language: xml);
+      CodeController(language: xml);
+
+
+  @override
+  void dispose() {
+    super.dispose();
+    _yamlController.dispose();
+    _moodleXmlController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +33,11 @@ class _OutputState extends State<Output> {
       TextField(
         controller: _yamlController,
         decoration: const InputDecoration(border: InputBorder.none),
-        onChanged: (value) {
-          context.read<SimpleCodeViewModel>().yamlData = value;
-        },
         maxLines: null,
       ),
       TextField(
         controller: _moodleXmlController,
         decoration: const InputDecoration(border: InputBorder.none),
-        onChanged: (value) {
-          context.read<SimpleCodeViewModel>().moodleXmlData = value;
-        },
         maxLines: null,
       )
     ];
@@ -111,8 +113,10 @@ class _OutputState extends State<Output> {
   void _download() {
     int index = context.read<SimpleCodeViewModel>().showingIndex;
     if (index == 0) {
+      context.read<SimpleCodeViewModel>().yamlData = _yamlController.text;
       context.read<SimpleCodeViewModel>().downloadYamlFile();
     } else {
+      context.read<SimpleCodeViewModel>().moodleXmlData = _moodleXmlController.text;
       context.read<SimpleCodeViewModel>().downloadXmlFile();
     }
   }

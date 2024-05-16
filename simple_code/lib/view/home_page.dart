@@ -1,6 +1,5 @@
-import 'dart:io';
+import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/task_form.dart';
@@ -18,6 +17,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late Future<void> _fileLoading;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _fileLoading = Future.delayed(Duration.zero, () {});
+  }
 
   void _closeDrawer() {
     Navigator.of(context).pop();
@@ -28,11 +35,19 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(title: Text(widget.title)),
-      body: const SizedBox.expand(
-        child: Row(children: [
-          Expanded(flex: 1, child: TaskForm()),
-          Expanded(flex: 1, child: Output()),
-        ]),
+      body: SizedBox.expand(
+        child: FutureBuilder(
+          future: _fileLoading,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return const Row(children: [
+              Expanded(flex: 1, child: TaskForm()),
+              Expanded(flex: 1, child: Output()),
+            ]);
+          }
+        ),
       ),
       drawer: Drawer(
         child: Padding(
@@ -43,12 +58,12 @@ class _HomePageState extends State<HomePage> {
               Container(
                 margin: const EdgeInsets.only(bottom: 8.0),
                 child: OutlinedButton(
-                  onPressed: () => _importYamlFile(context),
+                  onPressed: _importYamlFile,
                   child: const Text('Импортировать yaml файл'),
                 ),
               ),
               OutlinedButton(
-                onPressed: () => _importXmlFile(context),
+                onPressed: _importXmlFile,
                 child: const Text('Импортировать MoodleXml файл'),
               ),
               const Spacer(),
@@ -66,19 +81,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _importYamlFile(BuildContext context) async {
-    context.read<SimpleCodeViewModel>().openYamlFile()
-      .onError((error, stackTrace) => print("Не могу загрузить файл"));
+  void _importYamlFile() {
+    setState(() {
+      _fileLoading = context.read<SimpleCodeViewModel>().openYamlFile();
+    });
   }
 
-  Future<void> _downloadYamlFile(BuildContext context) async {
-    context.read<SimpleCodeViewModel>().downloadYamlFile();
-  }
-
-  Future<void> _importXmlFile(BuildContext context) async {
-    await context.read<SimpleCodeViewModel>().openXmlFile()
-        .onError(
-            (error, stackTrace) => print("Не могу загрузить xml файл $error")
-    );
+  void _importXmlFile() {
+    setState(() {
+      _fileLoading = context.read<SimpleCodeViewModel>().openXmlFile();
+    });
   }
 }

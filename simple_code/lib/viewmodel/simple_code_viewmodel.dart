@@ -39,7 +39,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   String get yamlData => _yamlData;
   set yamlData (String value) {
-    yamlData = value;
+    _yamlData = value;
     notifyListeners();
   }
 
