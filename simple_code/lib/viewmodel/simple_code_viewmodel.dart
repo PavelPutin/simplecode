@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:simple_code/model/task.dart';
@@ -9,21 +11,37 @@ import '../model/utils.dart';
 import '../model/testcase.dart';
 
 class SimpleCodeViewModel extends ChangeNotifier {
+  static const String emptyDaraPlaceholder = "Нет данных";
   final Task _task = Task("", "", "", "", [], {});
 
   Task get task => _task;
 
+  int _showingIndex = 0;
+
+  int get showingIndex => _showingIndex;
+  set showingIndex (int value) {
+    if (value < 0 || value > 1) {
+      throw ArgumentError("Showing index must be 0 or 1");
+    }
+    _showingIndex = value;
+    notifyListeners();
+  }
+
+  final List<String> _errorMessages = [];
+
+  UnmodifiableListView<String> get errorMessages => UnmodifiableListView(_errorMessages);
+
   String? _fileNameWithoutExtension;
 
-  String get FileName => _fileNameWithoutExtension ?? _task.name;
+  String get fileName => _fileNameWithoutExtension ?? _task.name;
 
-  String _yamlData = "";
+  String _yamlData = emptyDaraPlaceholder;
 
-  String get YamlData => _yamlData;
+  String get yamlData => _yamlData;
 
-  String _moodleXmlData = "";
+  String _moodleXmlData = emptyDaraPlaceholder;
 
-  String get MoodleXmlData => _moodleXmlData;
+  String get moodleXmlData => _moodleXmlData;
 
   /// throws
   /// YamlException
@@ -53,29 +71,60 @@ class SimpleCodeViewModel extends ChangeNotifier {
         _task.testcases.add(Testcase(testcase["stdin"].toString().trim(),
             testcase["expected"].toString().trim()));
       }
+      _showingIndex = 0;
+      _moodleXmlData = emptyDaraPlaceholder;
       notifyListeners();
     }
   }
 
   Future<void> downloadYamlFile() async {
-    downloadFile(FileName, "yaml", YamlData);
+    downloadFile(fileName, "yaml", yamlData);
   }
 
   bool validYamlTaskFile(YamlMap data) {
-    bool valid = data.containsKey("name") &&
-        data.containsKey("defaultGrade") &&
-        data.containsKey("questionText") &&
-        data.containsKey("answer") &&
-        data.containsKey("testcases");
+    _errorMessages.clear();
 
-    valid &= data["testcases"] is YamlList;
-    var testcases = data["testcases"] as YamlList;
-    valid &= testcases.isNotEmpty;
-    for (YamlMap testcase in testcases) {
-      valid &=
-          testcase.containsKey("stdin") && testcase.containsKey("expected");
+    bool valid = _checkYamlProperty(data, "name") &&
+        _checkYamlProperty(data, "questionText") &&
+        _checkYamlProperty(data, "defaultGrade") &&
+        _checkYamlProperty(data, "answer") &&
+        _checkYamlProperty(data, "testcases");
+
+    bool isYamlList = data["testcases"] is YamlList;
+    if (!isYamlList) {
+      _errorMessages.add("testcases не является массивом");
     }
+    valid &= isYamlList;
+
+    if (isYamlList) {
+      var testcases = data["testcases"] as YamlList;
+
+      bool notEmpty = testcases.isNotEmpty;
+      if (!notEmpty) {
+        _errorMessages.add("testcases пуст");
+      }
+      valid &= notEmpty;
+
+      int i = 1;
+      for (YamlMap testcase in testcases) {
+        valid &=
+            _checkYamlProperty(testcase, "stdin",
+                message: "Тест $i не содержит свойство stdin") &&
+            _checkYamlProperty(testcase, "expected",
+                message: "Тест $i не содержит свойство expected");
+        i++;
+      }
+    }
+    notifyListeners();
     return valid;
+  }
+
+  bool _checkYamlProperty(YamlMap data, String name, {String? message}) {
+    if (!data.containsKey(name)) {
+      _errorMessages.add(message ?? "Не найдено свойство $name");
+      return false;
+    }
+    return true;
   }
 
   /// throws
@@ -88,7 +137,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       XmlDocument data = XmlDocument.parse(input);
       if (!validXmlTaskFile(data)) {
-        throw Exception("invalid yaml format");
+        throw Exception("invalid xml format");
       }
 
       _fileNameWithoutExtension =
@@ -111,26 +160,54 @@ class SimpleCodeViewModel extends ChangeNotifier {
             testcase.xpath("stdin/text").first.innerText,
             testcase.xpath("expected/text").first.innerText));
       }
+      _showingIndex = 1;
+      _yamlData = emptyDaraPlaceholder;
       notifyListeners();
     }
   }
 
   Future<void> downloadXmlFile() async {
-    downloadFile(FileName, "xml", MoodleXmlData);
+    downloadFile(fileName, "xml", moodleXmlData);
   }
 
   bool validXmlTaskFile(XmlDocument data) {
-    bool valid = xmlContainsAll(data, [
-      "/quiz/question/name/text",
-      "/quiz/question/questiontext/text",
-      "/quiz/question/defaultgrade",
-      "/quiz/question/answer",
-      "/quiz/question/testcases",
-      "/quiz/question/testcases/testcase"
-    ]);
-    for (XmlNode node in data.xpath("/quiz/question/testcases/testcase")) {
-      valid &= xmlContainsAll(node, ["stdin/text", "expected/text"]);
+    _errorMessages.clear();
+
+    bool valid = _checkXmlProperty(data, "/quiz/question/name/text") &&
+        _checkXmlProperty(data, "/quiz/question/questiontext/text") &&
+        _checkXmlProperty(data, "/quiz/question/defaultgrade") &&
+        _checkXmlProperty(data, "/quiz/question/answer") &&
+        _checkXmlProperty(data, "/quiz/question/testcases");
+
+    var testcases = data.xpath("/quiz/question/testcases/testcase");
+    bool notEmpty = testcases.isNotEmpty;
+    if (!notEmpty) {
+      _errorMessages.add("testcases пуст");
     }
+    valid &= notEmpty;
+
+    int i = 1;
+    for (XmlNode node in testcases) {
+      valid &=
+          _checkXmlProperty(node, "stdin/text",
+              message: "Тест $i не содержит свойство stdin/text") &&
+          _checkXmlProperty(node, "expected/text",
+              message: "Тест $i не содержит свойство expected/text");
+      i++;
+    }
+
+    notifyListeners();
     return valid;
   }
+
+  bool _checkXmlProperty(XmlNode xml, String name, {String? message}) {
+    XmlNode? result = xml.xpath(name).firstOrNull;
+    if (result == null) {
+      _errorMessages.add(message ?? "Не найдено свойство $name");
+      return false;
+    }
+    return true;
+  }
 }
+
+

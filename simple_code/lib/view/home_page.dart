@@ -76,7 +76,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _importXmlFile(BuildContext context) async {
-    context.read<SimpleCodeViewModel>().openXmlFile()
-        .onError((error, stackTrace) => print("Не могу загрузить xml файл"));
+    await context.read<SimpleCodeViewModel>().openXmlFile()
+        .onError(
+            (error, stackTrace) => print("Не могу загрузить xml файл $error")
+    );
   }
 }

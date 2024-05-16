@@ -33,8 +33,21 @@ class _OutputState extends State<Output> {
       )
     ];
 
-    _yamlController.text = context.watch<SimpleCodeViewModel>().YamlData;
-    _moodleXmlController.text = context.watch<SimpleCodeViewModel>().MoodleXmlData;
+    int showingOutput = context.watch<SimpleCodeViewModel>().showingIndex;
+
+    _yamlController.text = context.watch<SimpleCodeViewModel>().yamlData;
+    _moodleXmlController.text = context.watch<SimpleCodeViewModel>().moodleXmlData;
+    var errors = context.watch<SimpleCodeViewModel>().errorMessages;
+
+    Widget errorBoxChild = const Center(child: Text("Нет ошибок"));
+    if (errors.isNotEmpty) {
+      errorBoxChild = ListView.builder(
+          itemCount: errors.length,
+          itemBuilder: (context, index) => ListTile(
+              title: Text("${index + 1}) ${errors[index]}")
+          )
+      );
+    }
 
     return Column(
       children: [
@@ -46,35 +59,43 @@ class _OutputState extends State<Output> {
           ],
         ),
         Expanded(
-          flex: 1,
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Column(
-                  children: <Widget>[
-                    Expanded(
-                        child: SizedBox(
-                      width: double.infinity,
-                      child: CodeTheme(
-                          data: CodeThemeData(styles: monokaiTheme),
-                          child: outputs[_showingOutput]),
-                    )),
-                  ],
+          flex: 3,
+          child: Card(
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(
+                          child: SizedBox(
+                        width: double.infinity,
+                        child: CodeTheme(
+                            data: CodeThemeData(styles: monokaiTheme),
+                            child: outputs[showingOutput]),
+                      )),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+        Expanded(
+            flex: 1,
+            child: Card(
+                child: errorBoxChild
+            )
+        )
       ],
     );
   }
 
   void _showYamlOutput() {
-    setState(() => _showingOutput = 0);
+    setState(() => context.read<SimpleCodeViewModel>().showingIndex = 0);
   }
 
   void _showMoodleXMLOutput() {
-    setState(() => _showingOutput = 1);
+    setState(() => context.read<SimpleCodeViewModel>().showingIndex = 1);
   }
 }
