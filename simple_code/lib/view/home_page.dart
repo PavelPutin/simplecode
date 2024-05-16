@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
-            return const Row(children: [
+            return const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(flex: 1, child: TaskForm()),
               Expanded(flex: 1, child: Output()),
             ]);
