@@ -14,7 +14,6 @@ class Output extends StatefulWidget {
 }
 
 class _OutputState extends State<Output> {
-  int _showingOutput = 0;
   final CodeController _yamlController =
       CodeController(text: "yaml doc:\n  status: 'cool'\n" * 300, language: yaml);
   final CodeController _moodleXmlController =
@@ -25,10 +24,12 @@ class _OutputState extends State<Output> {
     var outputs = [
       TextField(
         controller: _yamlController,
+        decoration: const InputDecoration(border: InputBorder.none),
         maxLines: null,
       ),
       TextField(
         controller: _moodleXmlController,
+        decoration: const InputDecoration(border: InputBorder.none),
         maxLines: null,
       )
     ];
