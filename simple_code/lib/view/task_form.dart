@@ -1,10 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:highlight/highlight.dart';
-import 'package:highlight/languages/java.dart';
 import 'package:re_editor/re_editor.dart';
+import 'package:re_highlight/languages/java.dart';
+import 'package:re_highlight/languages/c.dart';
+import 'package:re_highlight/languages/cpp.dart';
+import 'package:re_highlight/languages/node-repl.dart';
+import 'package:re_highlight/languages/delphi.dart';
+import 'package:re_highlight/languages/php.dart';
+import 'package:re_highlight/languages/python.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({super.key});
@@ -13,7 +17,22 @@ class TaskForm extends StatefulWidget {
   State<TaskForm> createState() => _TaskFormState();
 }
 
+enum AvailableLanguage {
+  java("Java", "11.0.21"),
+  c("C", "11.4.0"),
+  cpp("C++", "11.4.0"),
+  nodejs("Node.js", "12.22.9"),
+  pascal("Pascal", "3.2.2"),
+  php("PHP", "8.1.2"),
+  python3("Python", "3.10.12");
+
+  const AvailableLanguage(this.name, this.version);
+  final String name;
+  final String version;
+}
+
 class _TaskFormState extends State<TaskForm> {
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
 
@@ -21,12 +40,14 @@ class _TaskFormState extends State<TaskForm> {
   final QuillController questionTextController = QuillController.basic();
   bool questionTextEmpty = false;
   final TextEditingController gradeController = TextEditingController();
-  Mode language = java;
+  // Mode language = java;
 
   // final CodeController answerController = CodeController();
   final CodeLineEditingController answerController =
       CodeLineEditingController();
   bool answerEmpty = false;
+  AvailableLanguage selectedAnswerLanguage = AvailableLanguage.java;
+  final TextEditingController answerLanguageController = TextEditingController();
 
   int testsNumber = 1;
   late final List<TextEditingController> testStdinControllers;
@@ -50,6 +71,7 @@ class _TaskFormState extends State<TaskForm> {
     questionTextController.dispose();
     gradeController.dispose();
     answerController.dispose();
+    answerLanguageController.dispose();
     for (var element in testStdinControllers) {
       element.dispose();
     }
@@ -166,9 +188,29 @@ class _TaskFormState extends State<TaskForm> {
                                   ?.copyWith(
                                   color:
                                   Theme.of(context).colorScheme.error)),
+                        DropdownMenu<AvailableLanguage>(
+                          controller: answerLanguageController,
+                          initialSelection: AvailableLanguage.java,
+                          dropdownMenuEntries: AvailableLanguage.values.map((e) => DropdownMenuEntry(value: e, label: "${e.name} ${e.version}")).toList(),
+                          onSelected: (value) => setState(() {
+                            selectedAnswerLanguage = value ?? AvailableLanguage.java;
+                            if (value == null) {
+                              answerLanguageController.value = TextEditingValue(text: "${selectedAnswerLanguage.name} ${selectedAnswerLanguage.version}");
+                            }
+                          }),
+                        ),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 500),
                           child: CodeEditor(
+                            style: CodeEditorStyle(
+                              codeTheme: CodeHighlightTheme(
+                                languages: {
+                                  "java": CodeHighlightThemeMode(mode: langJava),
+                                  "c": CodeHighlightThemeMode(mode: langC)
+                                },theme: monokaiTheme
+                              )
+                            ),
+                            wordWrap: false,
                             controller: answerController,
                             indicatorBuilder: (context, editingController,
                                 chunkController, notifier) {

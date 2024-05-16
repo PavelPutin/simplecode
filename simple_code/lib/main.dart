@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/home_page.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
@@ -22,6 +23,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Simple code',
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
