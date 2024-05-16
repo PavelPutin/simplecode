@@ -31,17 +31,25 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   UnmodifiableListView<String> get errorMessages => UnmodifiableListView(_errorMessages);
 
-  String? _fileNameWithoutExtension;
+  String _fileNameWithoutExtension = "task";
 
   String get fileName => _fileNameWithoutExtension ?? _task.name;
 
   String _yamlData = emptyDaraPlaceholder;
 
   String get yamlData => _yamlData;
+  set yamlData (String value) {
+    yamlData = value;
+    notifyListeners();
+  }
 
   String _moodleXmlData = emptyDaraPlaceholder;
 
   String get moodleXmlData => _moodleXmlData;
+  set moodleXmlData (String value) {
+    _moodleXmlData = value;
+    notifyListeners();
+  }
 
   /// throws
   /// YamlException

@@ -25,11 +25,17 @@ class _OutputState extends State<Output> {
       TextField(
         controller: _yamlController,
         decoration: const InputDecoration(border: InputBorder.none),
+        onChanged: (value) {
+          context.read<SimpleCodeViewModel>().yamlData = value;
+        },
         maxLines: null,
       ),
       TextField(
         controller: _moodleXmlController,
         decoration: const InputDecoration(border: InputBorder.none),
+        onChanged: (value) {
+          context.read<SimpleCodeViewModel>().moodleXmlData = value;
+        },
         maxLines: null,
       )
     ];
@@ -56,7 +62,9 @@ class _OutputState extends State<Output> {
           children: [
             TextButton(onPressed: _showYamlOutput, child: const Text("yaml")),
             TextButton(
-                onPressed: _showMoodleXMLOutput, child: const Text("MoodleXML"))
+                onPressed: _showMoodleXMLOutput, child: const Text("MoodleXML")),
+            const Spacer(),
+            IconButton(onPressed: _download, icon: const Icon(Icons.download))
           ],
         ),
         Expanded(
@@ -98,5 +106,14 @@ class _OutputState extends State<Output> {
 
   void _showMoodleXMLOutput() {
     setState(() => context.read<SimpleCodeViewModel>().showingIndex = 1);
+  }
+
+  void _download() {
+    int index = context.read<SimpleCodeViewModel>().showingIndex;
+    if (index == 0) {
+      context.read<SimpleCodeViewModel>().downloadYamlFile();
+    } else {
+      context.read<SimpleCodeViewModel>().downloadXmlFile();
+    }
   }
 }
