@@ -184,7 +184,6 @@ class _TaskFormState extends State<TaskForm> {
                     Container(margin: const EdgeInsets.only(bottom: 30), child: NameTextField(nameController: nameController)),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      decoration: _boxWithValidation(questionTextEmpty),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -262,7 +261,6 @@ class _TaskFormState extends State<TaskForm> {
                     ),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      decoration: _boxWithValidation(answerEmpty),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -339,12 +337,6 @@ class _TaskFormState extends State<TaskForm> {
                     ),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      decoration: BoxDecoration(
-                          border: Border.all(
-                              width: 1,
-                              color: Theme.of(context).colorScheme.outline),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -383,7 +375,6 @@ class _TaskFormState extends State<TaskForm> {
                     ),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      decoration: _boxWithValidation(testGeneratorEmpty),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
