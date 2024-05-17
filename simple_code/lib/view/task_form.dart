@@ -625,24 +625,27 @@ class TestCaseField extends StatelessWidget {
                   icon: const Icon(Icons.delete))
             ],
           ),
-          TextFormField(
-            controller: stdinController,
-            maxLines: null,
-            onChanged: (value) {
-              context
-                  .read<SimpleCodeViewModel>()
-                  .task
-                  .testcases[number - 1]
-                  .stdin = value;
-            },
-            decoration: const InputDecoration(
-                border: OutlineInputBorder(), labelText: "Стандартный ввод*", filled: true, fillColor: Colors.white),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return "Обязательное поле";
-              }
-              return null;
-            },
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: TextFormField(
+              controller: stdinController,
+              maxLines: null,
+              onChanged: (value) {
+                context
+                    .read<SimpleCodeViewModel>()
+                    .task
+                    .testcases[number - 1]
+                    .stdin = value;
+              },
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(), labelText: "Стандартный ввод*", filled: true, fillColor: Colors.white),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Обязательное поле";
+                }
+                return null;
+              },
+            ),
           ),
           TextFormField(
             controller: expectedController,
