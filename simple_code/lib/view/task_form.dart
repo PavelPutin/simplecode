@@ -56,6 +56,11 @@ class _TaskFormState extends State<TaskForm> {
   late final List<TextEditingController> testExpectedControllers;
   List<bool> testEmpty = [];
 
+  final CodeLineEditingController testGeneratorController = CodeLineEditingController();
+  bool testGeneratorEmpty = false;
+  AvailableLanguage testGeneratorLanguage = AvailableLanguage.java;
+  final TextEditingController testGeneratorLanguageController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -318,16 +323,108 @@ class _TaskFormState extends State<TaskForm> {
                       ],
                     ),
                   ),
+                  Container(
+                    decoration: _boxWithValidation(testGeneratorEmpty),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Генератор тестов*",
+                            style: Theme
+                                .of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                color: !testGeneratorEmpty
+                                    ? Theme
+                                    .of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    : Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .error)),
+                        if (testGeneratorEmpty)
+                          Text("Обязательное поле",
+                              style: Theme
+                                  .of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                  color:
+                                  Theme
+                                      .of(context)
+                                      .colorScheme
+                                      .error)),
+                        DropdownMenu<AvailableLanguage>(
+                          controller: testGeneratorLanguageController,
+                          initialSelection: AvailableLanguage.java,
+                          dropdownMenuEntries: AvailableLanguage.values.map((
+                              e) =>
+                              DropdownMenuEntry(
+                                  value: e, label: "${e.name} ${e.version}"))
+                              .toList(),
+                          onSelected: (value) =>
+                              setState(() {
+                                testGeneratorLanguage =
+                                    value ?? AvailableLanguage.java;
+                                if (value == null) {
+                                  testGeneratorLanguageController.value =
+                                      TextEditingValue(
+                                          text: "${testGeneratorLanguage
+                                              .name} ${testGeneratorLanguage
+                                              .version}");
+                                }
+                              }),
+                        ),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: CodeEditor(
+                            style: CodeEditorStyle(
+                                codeTheme: CodeHighlightTheme(
+                                    languages: {
+                                      "java": CodeHighlightThemeMode(
+                                          mode: langJava),
+                                      "python": CodeHighlightThemeMode(
+                                        mode: langPython
+                                      )
+                                    }, theme: monokaiTheme
+                                )
+                            ),
+                            wordWrap: false,
+                            controller: testGeneratorController,
+                            indicatorBuilder: (context, editingController,
+                                chunkController, notifier) {
+                              return Row(
+                                children: [
+                                  DefaultCodeLineNumber(
+                                    controller: editingController,
+                                    notifier: notifier,
+                                  ),
+                                  DefaultCodeChunkIndicator(
+                                      width: 20,
+                                      controller: chunkController,
+                                      notifier: notifier)
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   ElevatedButton(
                     onPressed: () {
                       setState(() {
                         questionTextEmpty = false;
                         answerEmpty = false;
+                        testGeneratorEmpty = false;
                         testEmpty = List.filled(testsNumber, false, growable: true);
                       });
                       if (_formKey.currentState!.validate() &&
                           !questionTextController.document.isEmpty() &&
-                          !answerController.isEmpty) {
+                          !answerController.isEmpty &&
+                          !testGeneratorController.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               duration: Duration(seconds: 1),
@@ -341,6 +438,10 @@ class _TaskFormState extends State<TaskForm> {
 
                       if (answerController.isEmpty) {
                         setState(() => answerEmpty = true);
+                      }
+
+                      if (testGeneratorController.isEmpty) {
+                        setState(() => testGeneratorEmpty = true);
                       }
 
                       for (int i = 0; i < testsNumber; i++) {
