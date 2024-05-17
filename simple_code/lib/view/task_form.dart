@@ -12,6 +12,7 @@ import 'package:re_highlight/languages/php.dart';
 import 'package:re_highlight/languages/python.dart';
 import 'package:simple_code/model/testcase.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
+import 'package:quill_html_converter/quill_html_converter.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({super.key});
@@ -68,6 +69,9 @@ class _TaskFormState extends State<TaskForm> {
   void initState() {
     super.initState();
     // answerController.language = language;
+    questionTextController.addListener(() {
+      context.read<SimpleCodeViewModel>().task.questionText = questionTextController.document.toDelta().toHtml();
+    });
 
     testStdinControllers.clear();
     testExpectedControllers.clear();
@@ -113,7 +117,7 @@ class _TaskFormState extends State<TaskForm> {
     for (int i = 0; i < testsNumber; i++) {
       testStdinControllers.add(TextEditingController());
       testExpectedControllers.add(TextEditingController());
-      
+
       if (i < testcases.length) {
         testStdinControllers[i].text = testcases[i].stdin;
         testExpectedControllers[i].text = testcases[i].expected;
@@ -226,6 +230,9 @@ class _TaskFormState extends State<TaskForm> {
                   ),
                   TextFormField(
                     controller: gradeController,
+                    onChanged: (value) {
+                      context.read<SimpleCodeViewModel>().task.defaultGrade = value;
+                    },
                     decoration: const InputDecoration(
                         border: OutlineInputBorder(), labelText: "Оценка*"),
                     validator: (value) {
@@ -313,6 +320,9 @@ class _TaskFormState extends State<TaskForm> {
                             ),
                             wordWrap: false,
                             controller: answerController,
+                            onChanged: (CodeLineEditingValue? value) {
+                              context.read<SimpleCodeViewModel>().task.answer = answerController.text;
+                            },
                             indicatorBuilder: (context, editingController,
                                 chunkController, notifier) {
                               return Row(
@@ -429,6 +439,9 @@ class _TaskFormState extends State<TaskForm> {
                             ),
                             wordWrap: false,
                             controller: testGeneratorController,
+                            onChanged: (CodeLineEditingValue? value) {
+                              context.read<SimpleCodeViewModel>().task.testGenerator["customCode"] = testGeneratorController.text;
+                            },
                             indicatorBuilder: (context, editingController,
                                 chunkController, notifier) {
                               return Row(
@@ -461,6 +474,18 @@ class _TaskFormState extends State<TaskForm> {
                           !questionTextController.document.isEmpty() &&
                           !answerController.isEmpty &&
                           !testGeneratorController.isEmpty) {
+                        context.read<SimpleCodeViewModel>().task.name = nameController.text;
+                        context.read<SimpleCodeViewModel>().task.questionText = questionTextController.document.toDelta().toHtml();
+                        context.read<SimpleCodeViewModel>().task.defaultGrade = gradeController.text;
+                        context.read<SimpleCodeViewModel>().task.answer = answerController.text;
+                        for (int i = 0; i < context.read<SimpleCodeViewModel>().task.testcases.length; i++) {
+                          context.read<SimpleCodeViewModel>().task.testcases[i].stdin = testStdinControllers[i].text;
+                          context.read<SimpleCodeViewModel>().task.testcases[i].expected = testExpectedControllers[i].text;
+                        }
+                        context.read<SimpleCodeViewModel>().task.testGenerator["customCode"] = testGeneratorController.text;
+
+                        context.read<SimpleCodeViewModel>().generateTask();
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               duration: Duration(seconds: 1),
@@ -544,6 +569,9 @@ class NameTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: nameController,
+      onChanged: (value) {
+        context.read<SimpleCodeViewModel>().task.name = value;
+      },
       decoration: const InputDecoration(
           border: OutlineInputBorder(), labelText: "Название*"),
       validator: (value) {
@@ -589,6 +617,9 @@ class TestCaseField extends StatelessWidget {
           ),
           TextFormField(
             controller: stdinController,
+            onChanged: (value) {
+              context.read<SimpleCodeViewModel>().task.testcases[number - 1].stdin = value;
+            },
             decoration: const InputDecoration(
                 border: OutlineInputBorder(), labelText: "Стандартный ввод*"),
             validator: (value) {
@@ -602,6 +633,9 @@ class TestCaseField extends StatelessWidget {
           ),
           TextFormField(
             controller: expectedController,
+            onChanged: (value) {
+              context.read<SimpleCodeViewModel>().task.testcases[number - 1].expected = value;
+            },
             decoration: const InputDecoration(
                 border: OutlineInputBorder(), labelText: "Ожидаемый вывод*"),
             validator: (value) {

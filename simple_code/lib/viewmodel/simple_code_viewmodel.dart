@@ -12,7 +12,7 @@ import '../model/testcase.dart';
 
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
-  final Task _task = Task("", "", "", "", [], {});
+  final Task _task = Task("", "", "", "", [Testcase("", "")], {});
 
   Task get task => _task;
 
@@ -49,6 +49,12 @@ class SimpleCodeViewModel extends ChangeNotifier {
   set moodleXmlData (String value) {
     _moodleXmlData = value;
     notifyListeners();
+  }
+
+  Future<void> generateTask() {
+    return Future.delayed(const Duration(seconds: 1), () {
+      print(_task.toJson());
+    });
   }
 
   /// throws

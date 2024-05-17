@@ -4,8 +4,8 @@ part 'testcase.g.dart';
 
 @JsonSerializable()
 class Testcase {
-  final String stdin;
-  final String expected;
+  String stdin;
+  String expected;
 
   Testcase(this.stdin, this.expected);
 
