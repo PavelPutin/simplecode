@@ -14,26 +14,13 @@ import 'package:simple_code/model/testcase.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 import 'package:quill_html_converter/quill_html_converter.dart';
 
+import '../model/available_language.dart';
+
 class TaskForm extends StatefulWidget {
   const TaskForm({super.key});
 
   @override
   State<TaskForm> createState() => _TaskFormState();
-}
-
-enum AvailableLanguage {
-  java("Java", "11.0.21"),
-  c("C", "11.4.0"),
-  cpp("C++", "11.4.0"),
-  nodejs("Node.js", "12.22.9"),
-  pascal("Pascal", "3.2.2"),
-  php("PHP", "8.1.2"),
-  python3("Python", "3.10.12");
-
-  const AvailableLanguage(this.name, this.version);
-
-  final String name;
-  final String version;
 }
 
 class _TaskFormState extends State<TaskForm> {
@@ -63,7 +50,7 @@ class _TaskFormState extends State<TaskForm> {
   final CodeLineEditingController testGeneratorController =
       CodeLineEditingController();
   bool testGeneratorEmpty = false;
-  AvailableLanguage testGeneratorLanguage = AvailableLanguage.java;
+  AvailableLanguage selectedTestGeneratorLanguage = AvailableLanguage.java;
   final TextEditingController testGeneratorLanguageController =
       TextEditingController();
 
@@ -405,13 +392,13 @@ class _TaskFormState extends State<TaskForm> {
                                     value: e, label: "${e.name} ${e.version}"))
                                 .toList(),
                             onSelected: (value) => setState(() {
-                              testGeneratorLanguage =
+                              selectedTestGeneratorLanguage =
                                   value ?? AvailableLanguage.java;
                               if (value == null) {
                                 testGeneratorLanguageController.value =
                                     TextEditingValue(
                                         text:
-                                            "${testGeneratorLanguage.name} ${testGeneratorLanguage.version}");
+                                            "${selectedTestGeneratorLanguage.name} ${selectedTestGeneratorLanguage.version}");
                               }
                             }),
                           ),
@@ -484,6 +471,7 @@ class _TaskFormState extends State<TaskForm> {
                               gradeController.text;
                           context.read<SimpleCodeViewModel>().task.answer =
                               answerController.text;
+                          context.read<SimpleCodeViewModel>().answerLanguage = selectedAnswerLanguage;
                           for (int i = 0;
                               i <
                                   context
@@ -508,6 +496,7 @@ class _TaskFormState extends State<TaskForm> {
                                   .task
                                   .testGenerator["customCode"] =
                               testGeneratorController.text;
+                          context.read<SimpleCodeViewModel>().testGeneratorLanguage = selectedTestGeneratorLanguage;
 
                           context.read<SimpleCodeViewModel>().generateTask();
 

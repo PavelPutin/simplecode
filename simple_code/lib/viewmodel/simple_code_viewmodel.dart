@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:simple_code/model/available_language.dart';
 import 'package:simple_code/model/task.dart';
 import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
@@ -15,6 +16,14 @@ class SimpleCodeViewModel extends ChangeNotifier {
   final Task _task = Task("", "", "", "", [Testcase("", "")], {});
 
   Task get task => _task;
+
+  AvailableLanguage _answerLanguage = AvailableLanguage.java;
+  AvailableLanguage get answerLanguage => _answerLanguage;
+  set answerLanguage (AvailableLanguage value) => _answerLanguage = value;
+
+  AvailableLanguage _testGeneratorLanguage = AvailableLanguage.java;
+  AvailableLanguage get testGeneratorLanguage => _testGeneratorLanguage;
+  set testGeneratorLanguage (AvailableLanguage value) => _testGeneratorLanguage = value;
 
   int _showingIndex = 0;
 
@@ -53,7 +62,12 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   Future<void> generateTask() {
     return Future.delayed(const Duration(seconds: 1), () {
-      print(_task.toJson());
+      Map<String, dynamic> request = {
+        "answerLanguage": answerLanguage.jobeLanguageId,
+        "testGeneratorLanguage": testGeneratorLanguage.jobeLanguageId,
+        "task": _task.toJson()
+      };
+      print(request);
     });
   }
 

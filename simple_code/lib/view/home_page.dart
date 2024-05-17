@@ -19,7 +19,6 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late Future<void> _fileLoading;
 
-
   @override
   void initState() {
     super.initState();
@@ -37,17 +36,18 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(title: Text(widget.title)),
       body: SizedBox.expand(
         child: FutureBuilder(
-          future: _fileLoading,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(flex: 1, child: TaskForm()),
-              Expanded(flex: 1, child: Output()),
-            ]);
-          }
-        ),
+            future: _fileLoading,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 1, child: TaskForm()),
+                    Expanded(flex: 1, child: Output()),
+                  ]);
+            }),
       ),
       drawer: Drawer(
         child: Padding(
@@ -69,7 +69,15 @@ class _HomePageState extends State<HomePage> {
               const Spacer(),
               const Divider(),
               OutlinedButton(
-                onPressed: _closeDrawer,
+                onPressed: () => showAboutDialog(
+                    context: context,
+                    applicationVersion: "1.0.0",
+                    children: [
+                      const Text("Курсовой проект"),
+                      const Text("студента 3 курса ВГУ"),
+                      const Text("Путина Павла Александровича")
+                    ]
+                ),
                 child: const Text('О приложении'),
               ),
             ],
