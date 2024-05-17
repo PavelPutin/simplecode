@@ -27,6 +27,7 @@ enum AvailableLanguage {
   python3("Python", "3.10.12");
 
   const AvailableLanguage(this.name, this.version);
+
   final String name;
   final String version;
 }
@@ -40,11 +41,12 @@ class _TaskFormState extends State<TaskForm> {
   final QuillController questionTextController = QuillController.basic();
   bool questionTextEmpty = false;
   final TextEditingController gradeController = TextEditingController();
+
   // Mode language = java;
 
   // final CodeController answerController = CodeController();
   final CodeLineEditingController answerController =
-      CodeLineEditingController();
+  CodeLineEditingController();
   bool answerEmpty = false;
   AvailableLanguage selectedAnswerLanguage = AvailableLanguage.java;
   final TextEditingController answerLanguageController = TextEditingController();
@@ -52,6 +54,7 @@ class _TaskFormState extends State<TaskForm> {
   int testsNumber = 1;
   late final List<TextEditingController> testStdinControllers;
   late final List<TextEditingController> testExpectedControllers;
+  List<bool> testEmpty = [];
 
   @override
   void initState() {
@@ -62,6 +65,7 @@ class _TaskFormState extends State<TaskForm> {
         List.filled(testsNumber, TextEditingController(), growable: true);
     testExpectedControllers =
         List.filled(testsNumber, TextEditingController(), growable: true);
+    testEmpty = List.filled(testsNumber, false, growable: true);
   }
 
   @override
@@ -82,6 +86,33 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> taskTestcases = [];
+    for (int i = 0; i < testsNumber; i++) {
+      taskTestcases.add(TestCaseField(
+        number: i + 1,
+        stdinController: testStdinControllers[i],
+        expectedController: testExpectedControllers[i],
+        onDelete: (int number) {
+          setState(() {
+            if (testsNumber == 1) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    duration: Duration(seconds: 1),
+                    content: Text('Нельзя удалить единственный тест')),
+              );
+            } else {
+              testStdinControllers.removeAt(number - 1).dispose();
+              testExpectedControllers.removeAt(number - 1).dispose();
+              testEmpty.removeAt(number - 1);
+              testsNumber--;
+            }
+          });
+        },
+        boxDecoration: _boxWithValidation(testEmpty[i]),
+        textStyle: _textStyleWithValidation(testEmpty[i]),
+      ));
+    }
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -100,29 +131,38 @@ class _TaskFormState extends State<TaskForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Условие задачи*",
-                            style: Theme.of(context)
+                            style: Theme
+                                .of(context)
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
-                                    color: !questionTextEmpty
-                                        ? Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.color
-                                        : Theme.of(context).colorScheme.error)),
+                                color: !questionTextEmpty
+                                    ? Theme
+                                    .of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    : Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .error)),
                         if (questionTextEmpty)
                           Text("Обязательное поле",
-                              style: Theme.of(context)
+                              style: Theme
+                                  .of(context)
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                      color:
-                                          Theme.of(context).colorScheme.error)),
+                                  color:
+                                  Theme
+                                      .of(context)
+                                      .colorScheme
+                                      .error)),
                         QuillToolbar.simple(
                           configurations: QuillSimpleToolbarConfigurations(
                             controller: questionTextController,
                             sharedConfigurations:
-                                const QuillSharedConfigurations(
+                            const QuillSharedConfigurations(
                               locale: Locale('ru'),
                             ),
                           ),
@@ -135,7 +175,7 @@ class _TaskFormState extends State<TaskForm> {
                               configurations: QuillEditorConfigurations(
                                 controller: questionTextController,
                                 sharedConfigurations:
-                                    const QuillSharedConfigurations(
+                                const QuillSharedConfigurations(
                                   locale: Locale('ru'),
                                 ),
                               ),
@@ -150,7 +190,9 @@ class _TaskFormState extends State<TaskForm> {
                     decoration: const InputDecoration(
                         border: OutlineInputBorder(), labelText: "Оценка*"),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      if (value == null || value
+                          .trim()
+                          .isEmpty) {
                         return "Обязательное поле";
                       }
                       if (int.tryParse(value) == null) {
@@ -170,45 +212,65 @@ class _TaskFormState extends State<TaskForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Ответ (программа, решающая задачу)*",
-                            style: Theme.of(context)
+                            style: Theme
+                                .of(context)
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
                                 color: !answerEmpty
-                                    ? Theme.of(context)
+                                    ? Theme
+                                    .of(context)
                                     .textTheme
                                     .bodyMedium
                                     ?.color
-                                    : Theme.of(context).colorScheme.error)),
+                                    : Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .error)),
                         if (answerEmpty)
                           Text("Обязательное поле",
-                              style: Theme.of(context)
+                              style: Theme
+                                  .of(context)
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
                                   color:
-                                  Theme.of(context).colorScheme.error)),
+                                  Theme
+                                      .of(context)
+                                      .colorScheme
+                                      .error)),
                         DropdownMenu<AvailableLanguage>(
                           controller: answerLanguageController,
                           initialSelection: AvailableLanguage.java,
-                          dropdownMenuEntries: AvailableLanguage.values.map((e) => DropdownMenuEntry(value: e, label: "${e.name} ${e.version}")).toList(),
-                          onSelected: (value) => setState(() {
-                            selectedAnswerLanguage = value ?? AvailableLanguage.java;
-                            if (value == null) {
-                              answerLanguageController.value = TextEditingValue(text: "${selectedAnswerLanguage.name} ${selectedAnswerLanguage.version}");
-                            }
-                          }),
+                          dropdownMenuEntries: AvailableLanguage.values.map((
+                              e) =>
+                              DropdownMenuEntry(
+                                  value: e, label: "${e.name} ${e.version}"))
+                              .toList(),
+                          onSelected: (value) =>
+                              setState(() {
+                                selectedAnswerLanguage =
+                                    value ?? AvailableLanguage.java;
+                                if (value == null) {
+                                  answerLanguageController.value =
+                                      TextEditingValue(
+                                          text: "${selectedAnswerLanguage
+                                              .name} ${selectedAnswerLanguage
+                                              .version}");
+                                }
+                              }),
                         ),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 500),
                           child: CodeEditor(
                             style: CodeEditorStyle(
-                              codeTheme: CodeHighlightTheme(
-                                languages: {
-                                  "java": CodeHighlightThemeMode(mode: langJava),
-                                  "c": CodeHighlightThemeMode(mode: langC)
-                                },theme: monokaiTheme
-                              )
+                                codeTheme: CodeHighlightTheme(
+                                    languages: {
+                                      "java": CodeHighlightThemeMode(
+                                          mode: langJava),
+                                      "c": CodeHighlightThemeMode(mode: langC)
+                                    }, theme: monokaiTheme
+                                )
                             ),
                             wordWrap: false,
                             controller: answerController,
@@ -232,11 +294,36 @@ class _TaskFormState extends State<TaskForm> {
                       ],
                     ),
                   ),
+                  Container(
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                            width: 1,
+                            color: Theme.of(context).colorScheme.outline),
+                        borderRadius: const BorderRadius.all(Radius.circular(4))),
+                    child: Column(
+                      children: [
+                        const Text("Тестовые данные*"),
+                        ...taskTestcases,
+                        ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                testsNumber++;
+                                testStdinControllers.add(TextEditingController());
+                                testExpectedControllers.add(TextEditingController());
+                                testEmpty.add(false);
+                              });
+                            },
+                            child: const Text("Добавить тест")
+                        )
+                      ],
+                    ),
+                  ),
                   ElevatedButton(
                     onPressed: () {
                       setState(() {
                         questionTextEmpty = false;
                         answerEmpty = false;
+                        testEmpty = List.filled(testsNumber, false, growable: true);
                       });
                       if (_formKey.currentState!.validate() &&
                           !questionTextController.document.isEmpty() &&
@@ -255,6 +342,12 @@ class _TaskFormState extends State<TaskForm> {
                       if (answerController.isEmpty) {
                         setState(() => answerEmpty = true);
                       }
+
+                      for (int i = 0; i < testsNumber; i++) {
+                        if (testStdinControllers[i].text.isEmpty || testExpectedControllers[i].text.isEmpty) {
+                          setState(() =>testEmpty[i] = true);
+                        }
+                      }
                     },
                     child: const Text('Создать задачу'),
                   ),
@@ -272,9 +365,33 @@ class _TaskFormState extends State<TaskForm> {
         border: Border.all(
             width: 1,
             color: !predicateValue
-                ? Theme.of(context).colorScheme.outline
-                : Theme.of(context).colorScheme.error),
+                ? Theme
+                .of(context)
+                .colorScheme
+                .outline
+                : Theme
+                .of(context)
+                .colorScheme
+                .error),
         borderRadius: const BorderRadius.all(Radius.circular(4)));
+  }
+
+  TextStyle? _textStyleWithValidation(bool predicateValue) {
+    return Theme
+        .of(context)
+        .textTheme
+        .bodyMedium
+        ?.copyWith(
+        color: !predicateValue
+            ? Theme
+            .of(context)
+            .textTheme
+            .bodyMedium
+            ?.color
+            : Theme
+            .of(context)
+            .colorScheme
+            .error);
   }
 }
 
@@ -293,11 +410,77 @@ class NameTextField extends StatelessWidget {
       decoration: const InputDecoration(
           border: OutlineInputBorder(), labelText: "Название*"),
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
+        if (value == null || value
+            .trim()
+            .isEmpty) {
           return "Обязательное поле";
         }
         return null;
       },
     );
   }
+}
+
+class TestCaseField extends StatelessWidget {
+
+  final int number;
+  final TextEditingController stdinController;
+  final TextEditingController expectedController;
+  final BoxDecoration boxDecoration;
+  final TextStyle? textStyle;
+  final Function(int i) onDelete;
+
+  const TestCaseField(
+      {super.key,
+        required this.number,
+        required this.stdinController,
+        required this.expectedController,
+        required this.boxDecoration,
+        this.textStyle,
+        required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: boxDecoration,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text("Тест $number", style: textStyle),
+              IconButton(onPressed: () => onDelete(number), icon: const Icon(Icons.delete))],
+          ),
+          TextFormField(
+            controller: stdinController,
+            decoration: const InputDecoration(
+                border: OutlineInputBorder(), labelText: "Стандартный ввод*"),
+            autovalidateMode: AutovalidateMode.always,
+            validator: (value) {
+              if (value == null || value
+                  .trim()
+                  .isEmpty) {
+                return "Обязательное поле";
+              }
+              return null;
+            },
+          ),
+          TextFormField(
+            controller: expectedController,
+            decoration: const InputDecoration(
+                border: OutlineInputBorder(), labelText: "Ожидаемый вывод*"),
+            autovalidateMode: AutovalidateMode.always,
+            validator: (value) {
+              if (value == null || value
+                  .trim()
+                  .isEmpty) {
+                return "Обязательное поле";
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
 }
