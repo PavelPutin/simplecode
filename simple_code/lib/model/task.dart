@@ -3,7 +3,7 @@ import 'package:simple_code/model/testcase.dart';
 
 part 'task.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class Task {
   String name;
   String questionText;

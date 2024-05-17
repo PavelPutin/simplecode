@@ -22,6 +22,6 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
       'questionText': instance.questionText,
       'defaultGrade': instance.defaultGrade,
       'answer': instance.answer,
-      'testcases': instance.testcases,
+      'testcases': instance.testcases.map((e) => e.toJson()).toList(),
       'testGenerator': instance.testGenerator,
     };

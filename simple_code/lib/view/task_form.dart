@@ -50,6 +50,7 @@ class _TaskFormState extends State<TaskForm> {
   final CodeLineEditingController testGeneratorController =
       CodeLineEditingController();
   bool testGeneratorEmpty = false;
+  final TextEditingController generatedTestsAmount = TextEditingController(text: "1");
   AvailableLanguage selectedTestGeneratorLanguage = AvailableLanguage.java;
   final TextEditingController testGeneratorLanguageController =
       TextEditingController();
@@ -384,6 +385,28 @@ class _TaskFormState extends State<TaskForm> {
                                     ?.copyWith(
                                         color:
                                             Theme.of(context).colorScheme.error)),
+                          Container(
+                            margin: const EdgeInsets.only(top: 8, bottom: 8),
+                            child: TextFormField(
+                              controller: generatedTestsAmount,
+                              decoration: const InputDecoration(
+                                  border: OutlineInputBorder(), labelText: "Количество тестов*", filled: true, fillColor: Colors.white),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return "Обязательное поле";
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return "Количество тестов должно быть целым числом";
+                                }
+
+                                if (int.parse(value) <= 0) {
+                                  return "Количество тестов должно быть больше нуля";
+                                }
+
+                                return null;
+                              },
+                            ),
+                          ),
                           DropdownMenu<AvailableLanguage>(
                             controller: testGeneratorLanguageController,
                             initialSelection: AvailableLanguage.java,
@@ -496,6 +519,7 @@ class _TaskFormState extends State<TaskForm> {
                                   .task
                                   .testGenerator["customCode"] =
                               testGeneratorController.text;
+                          context.read<SimpleCodeViewModel>().generatedTestsAmount = int.parse(generatedTestsAmount.text);
                           context.read<SimpleCodeViewModel>().testGeneratorLanguage = selectedTestGeneratorLanguage;
 
                           context.read<SimpleCodeViewModel>().generateTask();

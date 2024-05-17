@@ -17,6 +17,10 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   Task get task => _task;
 
+  int _generatedTestsAmount = 1;
+  int get generatedTestsAmount => _generatedTestsAmount;
+  set generatedTestsAmount (int value) => _generatedTestsAmount = value;
+
   AvailableLanguage _answerLanguage = AvailableLanguage.java;
   AvailableLanguage get answerLanguage => _answerLanguage;
   set answerLanguage (AvailableLanguage value) => _answerLanguage = value;
@@ -65,6 +69,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
       Map<String, dynamic> request = {
         "answerLanguage": answerLanguage.jobeLanguageId,
         "testGeneratorLanguage": testGeneratorLanguage.jobeLanguageId,
+        "generatedTestsAmount": generatedTestsAmount,
         "task": _task.toJson()
       };
       print(request);
