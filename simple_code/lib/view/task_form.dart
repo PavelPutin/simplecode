@@ -37,7 +37,6 @@ enum AvailableLanguage {
 }
 
 class _TaskFormState extends State<TaskForm> {
-
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
 
@@ -50,27 +49,31 @@ class _TaskFormState extends State<TaskForm> {
 
   // final CodeController answerController = CodeController();
   final CodeLineEditingController answerController =
-  CodeLineEditingController();
+      CodeLineEditingController();
   bool answerEmpty = false;
   AvailableLanguage selectedAnswerLanguage = AvailableLanguage.java;
-  final TextEditingController answerLanguageController = TextEditingController();
+  final TextEditingController answerLanguageController =
+      TextEditingController();
 
   int testsNumber = 1;
   final List<TextEditingController> testStdinControllers = [];
   final List<TextEditingController> testExpectedControllers = [];
   List<bool> testEmpty = [];
 
-  final CodeLineEditingController testGeneratorController = CodeLineEditingController();
+  final CodeLineEditingController testGeneratorController =
+      CodeLineEditingController();
   bool testGeneratorEmpty = false;
   AvailableLanguage testGeneratorLanguage = AvailableLanguage.java;
-  final TextEditingController testGeneratorLanguageController = TextEditingController();
+  final TextEditingController testGeneratorLanguageController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
     // answerController.language = language;
     questionTextController.addListener(() {
-      context.read<SimpleCodeViewModel>().task.questionText = questionTextController.document.toDelta().toHtml();
+      context.read<SimpleCodeViewModel>().task.questionText =
+          questionTextController.document.toDelta().toHtml();
     });
 
     testStdinControllers.clear();
@@ -105,9 +108,11 @@ class _TaskFormState extends State<TaskForm> {
     if (question.isNotEmpty) {
       questionTextController.document = Document.fromHtml(question);
     }
-    gradeController.text = context.watch<SimpleCodeViewModel>().task.defaultGrade;
+    gradeController.text =
+        context.watch<SimpleCodeViewModel>().task.defaultGrade;
     answerController.text = context.watch<SimpleCodeViewModel>().task.answer;
-    var testcases = Provider.of<SimpleCodeViewModel>(context, listen: false).task.testcases;
+    var testcases =
+        Provider.of<SimpleCodeViewModel>(context, listen: false).task.testcases;
     if (testcases.isNotEmpty) {
       testsNumber = testcases.length;
     }
@@ -126,7 +131,9 @@ class _TaskFormState extends State<TaskForm> {
 
     testEmpty = List.filled(testsNumber, false, growable: true);
 
-    testGeneratorController.text = context.watch<SimpleCodeViewModel>().task.testGenerator["customCode"] ?? "";
+    testGeneratorController.text =
+        context.watch<SimpleCodeViewModel>().task.testGenerator["customCode"] ??
+            "";
 
     List<Widget> taskTestcases = [];
     for (int i = 0; i < testsNumber; i++) {
@@ -146,7 +153,11 @@ class _TaskFormState extends State<TaskForm> {
               testStdinControllers.removeAt(number - 1).dispose();
               testExpectedControllers.removeAt(number - 1).dispose();
               testEmpty.removeAt(number - 1);
-              context.read<SimpleCodeViewModel>().task.testcases.removeAt(number - 1);
+              context
+                  .read<SimpleCodeViewModel>()
+                  .task
+                  .testcases
+                  .removeAt(number - 1);
               testsNumber--;
             }
           });
@@ -163,357 +174,382 @@ class _TaskFormState extends State<TaskForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Card(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: <Widget>[
-                  NameTextField(nameController: nameController),
-                  Container(
-                    decoration: _boxWithValidation(questionTextEmpty),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Условие задачи*",
-                            style: Theme
-                                .of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                color: !questionTextEmpty
-                                    ? Theme
-                                    .of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    : Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .error)),
-                        if (questionTextEmpty)
-                          Text("Обязательное поле",
-                              style: Theme
-                                  .of(context)
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(margin: const EdgeInsets.only(bottom: 30), child: NameTextField(nameController: nameController)),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      decoration: _boxWithValidation(questionTextEmpty),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Условие задачи*",
+                              style: Theme.of(context)
                                   .textTheme
-                                  .bodySmall
+                                  .bodyMedium
                                   ?.copyWith(
-                                  color:
-                                  Theme
-                                      .of(context)
-                                      .colorScheme
-                                      .error)),
-                        QuillToolbar.simple(
-                          configurations: QuillSimpleToolbarConfigurations(
-                            controller: questionTextController,
-                            sharedConfigurations:
-                            const QuillSharedConfigurations(
-                              locale: Locale('ru'),
+                                      color: !questionTextEmpty
+                                          ? Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color
+                                          : Theme.of(context).colorScheme.error)),
+                          if (questionTextEmpty)
+                            Text("Обязательное поле",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.error)),
+                          QuillToolbar.simple(
+                            configurations: QuillSimpleToolbarConfigurations(
+                              controller: questionTextController,
+                              sharedConfigurations:
+                                  const QuillSharedConfigurations(
+                                locale: Locale('ru'),
+                              ),
                             ),
                           ),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 100),
-                          child: Container(
-                            color: Colors.white,
-                            child: QuillEditor.basic(
-                              configurations: QuillEditorConfigurations(
-                                controller: questionTextController,
-                                sharedConfigurations:
-                                const QuillSharedConfigurations(
-                                  locale: Locale('ru'),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 100),
+                            child: Container(
+                              color: Colors.white,
+                              child: QuillEditor.basic(
+                                configurations: QuillEditorConfigurations(
+                                  controller: questionTextController,
+                                  sharedConfigurations:
+                                      const QuillSharedConfigurations(
+                                    locale: Locale('ru'),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  TextFormField(
-                    controller: gradeController,
-                    onChanged: (value) {
-                      context.read<SimpleCodeViewModel>().task.defaultGrade = value;
-                    },
-                    decoration: const InputDecoration(
-                        border: OutlineInputBorder(), labelText: "Оценка*"),
-                    validator: (value) {
-                      if (value == null || value
-                          .trim()
-                          .isEmpty) {
-                        return "Обязательное поле";
-                      }
-                      if (int.tryParse(value) == null) {
-                        return "Оценка должна быть целым числом";
-                      }
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      child: TextFormField(
+                        controller: gradeController,
+                        onChanged: (value) {
+                          context.read<SimpleCodeViewModel>().task.defaultGrade =
+                              value;
+                        },
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), labelText: "Оценка*", filled: true, fillColor: Colors.white),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Обязательное поле";
+                          }
+                          if (int.tryParse(value) == null) {
+                            return "Оценка должна быть целым числом";
+                          }
 
-                      if (int.parse(value) <= 0) {
-                        return "Оценка должан быть больше нуля";
-                      }
+                          if (int.parse(value) <= 0) {
+                            return "Оценка должан быть больше нуля";
+                          }
 
-                      return null;
-                    },
-                  ),
-                  Container(
-                    decoration: _boxWithValidation(answerEmpty),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Ответ (программа, решающая задачу)*",
-                            style: Theme
-                                .of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                color: !answerEmpty
-                                    ? Theme
-                                    .of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    : Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .error)),
-                        if (answerEmpty)
-                          Text("Обязательное поле",
-                              style: Theme
-                                  .of(context)
+                          return null;
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      decoration: _boxWithValidation(answerEmpty),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Ответ (программа, решающая задачу)*",
+                              style: Theme.of(context)
                                   .textTheme
-                                  .bodySmall
+                                  .bodyMedium
                                   ?.copyWith(
-                                  color:
-                                  Theme
-                                      .of(context)
-                                      .colorScheme
-                                      .error)),
-                        DropdownMenu<AvailableLanguage>(
-                          controller: answerLanguageController,
-                          initialSelection: AvailableLanguage.java,
-                          dropdownMenuEntries: AvailableLanguage.values.map((
-                              e) =>
-                              DropdownMenuEntry(
-                                  value: e, label: "${e.name} ${e.version}"))
-                              .toList(),
-                          onSelected: (value) =>
-                              setState(() {
-                                selectedAnswerLanguage =
-                                    value ?? AvailableLanguage.java;
-                                if (value == null) {
-                                  answerLanguageController.value =
-                                      TextEditingValue(
-                                          text: "${selectedAnswerLanguage
-                                              .name} ${selectedAnswerLanguage
-                                              .version}");
-                                }
-                              }),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 500),
-                          child: CodeEditor(
-                            style: CodeEditorStyle(
-                                codeTheme: CodeHighlightTheme(
-                                    languages: {
-                                      "java": CodeHighlightThemeMode(
-                                          mode: langJava),
-                                      "c": CodeHighlightThemeMode(mode: langC)
-                                    }, theme: monokaiTheme
-                                )
-                            ),
-                            wordWrap: false,
-                            controller: answerController,
-                            onChanged: (CodeLineEditingValue? value) {
-                              context.read<SimpleCodeViewModel>().task.answer = answerController.text;
-                            },
-                            indicatorBuilder: (context, editingController,
-                                chunkController, notifier) {
-                              return Row(
-                                children: [
-                                  DefaultCodeLineNumber(
-                                    controller: editingController,
-                                    notifier: notifier,
-                                  ),
-                                  DefaultCodeChunkIndicator(
-                                      width: 20,
-                                      controller: chunkController,
-                                      notifier: notifier)
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                            width: 1,
-                            color: Theme.of(context).colorScheme.outline),
-                        borderRadius: const BorderRadius.all(Radius.circular(4))),
-                    child: Column(
-                      children: [
-                        const Text("Тестовые данные*"),
-                        ...taskTestcases,
-                        ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                testsNumber++;
-                                testStdinControllers.add(TextEditingController());
-                                testExpectedControllers.add(TextEditingController());
-                                testEmpty.add(false);
-                                //todo: move to viewmodel
-                                context.read<SimpleCodeViewModel>().task.testcases.add(Testcase("", ""));
-                              });
-                            },
-                            child: const Text("Добавить тест")
-                        )
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: _boxWithValidation(testGeneratorEmpty),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Генератор тестов*",
-                            style: Theme
-                                .of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                color: !testGeneratorEmpty
-                                    ? Theme
-                                    .of(context)
+                                      color: !answerEmpty
+                                          ? Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color
+                                          : Theme.of(context).colorScheme.error)),
+                          if (answerEmpty)
+                            Text("Обязательное поле",
+                                style: Theme.of(context)
                                     .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    : Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .error)),
-                        if (testGeneratorEmpty)
-                          Text("Обязательное поле",
-                              style: Theme
-                                  .of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                  color:
-                                  Theme
-                                      .of(context)
-                                      .colorScheme
-                                      .error)),
-                        DropdownMenu<AvailableLanguage>(
-                          controller: testGeneratorLanguageController,
-                          initialSelection: AvailableLanguage.java,
-                          dropdownMenuEntries: AvailableLanguage.values.map((
-                              e) =>
-                              DropdownMenuEntry(
-                                  value: e, label: "${e.name} ${e.version}"))
-                              .toList(),
-                          onSelected: (value) =>
-                              setState(() {
-                                testGeneratorLanguage =
-                                    value ?? AvailableLanguage.java;
-                                if (value == null) {
-                                  testGeneratorLanguageController.value =
-                                      TextEditingValue(
-                                          text: "${testGeneratorLanguage
-                                              .name} ${testGeneratorLanguage
-                                              .version}");
-                                }
-                              }),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          child: CodeEditor(
-                            style: CodeEditorStyle(
-                                codeTheme: CodeHighlightTheme(
-                                    languages: {
-                                      "java": CodeHighlightThemeMode(
-                                          mode: langJava),
-                                      "python": CodeHighlightThemeMode(
-                                        mode: langPython
-                                      )
-                                    }, theme: monokaiTheme
-                                )
-                            ),
-                            wordWrap: false,
-                            controller: testGeneratorController,
-                            onChanged: (CodeLineEditingValue? value) {
-                              context.read<SimpleCodeViewModel>().task.testGenerator["customCode"] = testGeneratorController.text;
-                            },
-                            indicatorBuilder: (context, editingController,
-                                chunkController, notifier) {
-                              return Row(
-                                children: [
-                                  DefaultCodeLineNumber(
-                                    controller: editingController,
-                                    notifier: notifier,
-                                  ),
-                                  DefaultCodeChunkIndicator(
-                                      width: 20,
-                                      controller: chunkController,
-                                      notifier: notifier)
-                                ],
-                              );
-                            },
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.error)),
+                          DropdownMenu<AvailableLanguage>(
+                            controller: answerLanguageController,
+                            initialSelection: AvailableLanguage.java,
+                            dropdownMenuEntries: AvailableLanguage.values
+                                .map((e) => DropdownMenuEntry(
+                                    value: e, label: "${e.name} ${e.version}"))
+                                .toList(),
+                            onSelected: (value) => setState(() {
+                              selectedAnswerLanguage =
+                                  value ?? AvailableLanguage.java;
+                              if (value == null) {
+                                answerLanguageController.value = TextEditingValue(
+                                    text:
+                                        "${selectedAnswerLanguage.name} ${selectedAnswerLanguage.version}");
+                              }
+                            }),
                           ),
-                        ),
-                      ],
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 500),
+                            child: CodeEditor(
+                              style: CodeEditorStyle(
+                                backgroundColor: Colors.white,
+                                  codeTheme: CodeHighlightTheme(languages: {
+                                "java": CodeHighlightThemeMode(mode: langJava),
+                                "c": CodeHighlightThemeMode(mode: langC)
+                              }, theme: monokaiTheme)),
+                              wordWrap: false,
+                              controller: answerController,
+                              onChanged: (CodeLineEditingValue? value) {
+                                context.read<SimpleCodeViewModel>().task.answer =
+                                    answerController.text;
+                              },
+                              indicatorBuilder: (context, editingController,
+                                  chunkController, notifier) {
+                                return Row(
+                                  children: [
+                                    DefaultCodeLineNumber(
+                                      controller: editingController,
+                                      notifier: notifier,
+                                    ),
+                                    DefaultCodeChunkIndicator(
+                                        width: 20,
+                                        controller: chunkController,
+                                        notifier: notifier)
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        questionTextEmpty = false;
-                        answerEmpty = false;
-                        testGeneratorEmpty = false;
-                        testEmpty = List.filled(testsNumber, false, growable: true);
-                      });
-                      if (_formKey.currentState!.validate() &&
-                          !questionTextController.document.isEmpty() &&
-                          !answerController.isEmpty &&
-                          !testGeneratorController.isEmpty) {
-                        context.read<SimpleCodeViewModel>().task.name = nameController.text;
-                        context.read<SimpleCodeViewModel>().task.questionText = questionTextController.document.toDelta().toHtml();
-                        context.read<SimpleCodeViewModel>().task.defaultGrade = gradeController.text;
-                        context.read<SimpleCodeViewModel>().task.answer = answerController.text;
-                        for (int i = 0; i < context.read<SimpleCodeViewModel>().task.testcases.length; i++) {
-                          context.read<SimpleCodeViewModel>().task.testcases[i].stdin = testStdinControllers[i].text;
-                          context.read<SimpleCodeViewModel>().task.testcases[i].expected = testExpectedControllers[i].text;
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                              width: 1,
+                              color: Theme.of(context).colorScheme.outline),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(4))),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Тестовые данные*"),
+                          ...taskTestcases,
+                          FilledButton(
+                              style: ButtonStyle(
+                                  backgroundColor: MaterialStateProperty.all(
+                                      const Color(0xff0f6cbf)),
+                                  overlayColor: MaterialStateProperty.all(
+                                      const Color(0xff0c589c)),
+                                  shape: MaterialStateProperty.all(
+                                    RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                  )),
+                              onPressed: () {
+                                setState(() {
+                                  testsNumber++;
+                                  testStdinControllers
+                                      .add(TextEditingController());
+                                  testExpectedControllers
+                                      .add(TextEditingController());
+                                  testEmpty.add(false);
+                                  //todo: move to viewmodel
+                                  context
+                                      .read<SimpleCodeViewModel>()
+                                      .task
+                                      .testcases
+                                      .add(Testcase("", ""));
+                                });
+                              },
+                              child: const Text("Добавить тест"))
+                        ],
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      decoration: _boxWithValidation(testGeneratorEmpty),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Генератор тестов*",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                      color: !testGeneratorEmpty
+                                          ? Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color
+                                          : Theme.of(context).colorScheme.error)),
+                          if (testGeneratorEmpty)
+                            Text("Обязательное поле",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.error)),
+                          DropdownMenu<AvailableLanguage>(
+                            controller: testGeneratorLanguageController,
+                            initialSelection: AvailableLanguage.java,
+                            dropdownMenuEntries: AvailableLanguage.values
+                                .map((e) => DropdownMenuEntry(
+                                    value: e, label: "${e.name} ${e.version}"))
+                                .toList(),
+                            onSelected: (value) => setState(() {
+                              testGeneratorLanguage =
+                                  value ?? AvailableLanguage.java;
+                              if (value == null) {
+                                testGeneratorLanguageController.value =
+                                    TextEditingValue(
+                                        text:
+                                            "${testGeneratorLanguage.name} ${testGeneratorLanguage.version}");
+                              }
+                            }),
+                          ),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            child: CodeEditor(
+                              style: CodeEditorStyle(
+                                backgroundColor: Colors.white,
+                                  codeTheme: CodeHighlightTheme(languages: {
+                                "java": CodeHighlightThemeMode(mode: langJava),
+                                "python": CodeHighlightThemeMode(mode: langPython)
+                              }, theme: monokaiTheme)),
+                              wordWrap: false,
+                              controller: testGeneratorController,
+                              onChanged: (CodeLineEditingValue? value) {
+                                context
+                                        .read<SimpleCodeViewModel>()
+                                        .task
+                                        .testGenerator["customCode"] =
+                                    testGeneratorController.text;
+                              },
+                              indicatorBuilder: (context, editingController,
+                                  chunkController, notifier) {
+                                return Row(
+                                  children: [
+                                    DefaultCodeLineNumber(
+                                      controller: editingController,
+                                      notifier: notifier,
+                                    ),
+                                    DefaultCodeChunkIndicator(
+                                        width: 20,
+                                        controller: chunkController,
+                                        notifier: notifier)
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    FilledButton(
+                      style: ButtonStyle(
+                          backgroundColor:
+                              MaterialStateProperty.all(const Color(0xff0f6cbf)),
+                          overlayColor:
+                              MaterialStateProperty.all(const Color(0xff0c589c)),
+                          shape: MaterialStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          )),
+                      onPressed: () {
+                        setState(() {
+                          questionTextEmpty = false;
+                          answerEmpty = false;
+                          testGeneratorEmpty = false;
+                          testEmpty =
+                              List.filled(testsNumber, false, growable: true);
+                        });
+                        if (_formKey.currentState!.validate() &&
+                            !questionTextController.document.isEmpty() &&
+                            !answerController.isEmpty &&
+                            !testGeneratorController.isEmpty) {
+                          context.read<SimpleCodeViewModel>().task.name =
+                              nameController.text;
+                          context.read<SimpleCodeViewModel>().task.questionText =
+                              questionTextController.document.toDelta().toHtml();
+                          context.read<SimpleCodeViewModel>().task.defaultGrade =
+                              gradeController.text;
+                          context.read<SimpleCodeViewModel>().task.answer =
+                              answerController.text;
+                          for (int i = 0;
+                              i <
+                                  context
+                                      .read<SimpleCodeViewModel>()
+                                      .task
+                                      .testcases
+                                      .length;
+                              i++) {
+                            context
+                                .read<SimpleCodeViewModel>()
+                                .task
+                                .testcases[i]
+                                .stdin = testStdinControllers[i].text;
+                            context
+                                .read<SimpleCodeViewModel>()
+                                .task
+                                .testcases[i]
+                                .expected = testExpectedControllers[i].text;
+                          }
+                          context
+                                  .read<SimpleCodeViewModel>()
+                                  .task
+                                  .testGenerator["customCode"] =
+                              testGeneratorController.text;
+
+                          context.read<SimpleCodeViewModel>().generateTask();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                duration: Duration(seconds: 1),
+                                content: Text('Данные отправлены')),
+                          );
                         }
-                        context.read<SimpleCodeViewModel>().task.testGenerator["customCode"] = testGeneratorController.text;
 
-                        context.read<SimpleCodeViewModel>().generateTask();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              duration: Duration(seconds: 1),
-                              content: Text('Данные отправлены')),
-                        );
-                      }
-
-                      if (questionTextController.document.isEmpty()) {
-                        setState(() => questionTextEmpty = true);
-                      }
-
-                      if (answerController.isEmpty) {
-                        setState(() => answerEmpty = true);
-                      }
-
-                      if (testGeneratorController.isEmpty) {
-                        setState(() => testGeneratorEmpty = true);
-                      }
-
-                      for (int i = 0; i < testsNumber; i++) {
-                        if (testStdinControllers[i].text.isEmpty || testExpectedControllers[i].text.isEmpty) {
-                          setState(() =>testEmpty[i] = true);
+                        if (questionTextController.document.isEmpty()) {
+                          setState(() => questionTextEmpty = true);
                         }
-                      }
-                    },
-                    child: const Text('Создать задачу'),
-                  ),
-                ],
+
+                        if (answerController.isEmpty) {
+                          setState(() => answerEmpty = true);
+                        }
+
+                        if (testGeneratorController.isEmpty) {
+                          setState(() => testGeneratorEmpty = true);
+                        }
+
+                        for (int i = 0; i < testsNumber; i++) {
+                          if (testStdinControllers[i].text.isEmpty ||
+                              testExpectedControllers[i].text.isEmpty) {
+                            setState(() => testEmpty[i] = true);
+                          }
+                        }
+                      },
+                      child: const Text('Создать задачу'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -527,33 +563,16 @@ class _TaskFormState extends State<TaskForm> {
         border: Border.all(
             width: 1,
             color: !predicateValue
-                ? Theme
-                .of(context)
-                .colorScheme
-                .outline
-                : Theme
-                .of(context)
-                .colorScheme
-                .error),
+                ? Theme.of(context).colorScheme.outline
+                : Theme.of(context).colorScheme.error),
         borderRadius: const BorderRadius.all(Radius.circular(4)));
   }
 
   TextStyle? _textStyleWithValidation(bool predicateValue) {
-    return Theme
-        .of(context)
-        .textTheme
-        .bodyMedium
-        ?.copyWith(
+    return Theme.of(context).textTheme.bodyMedium?.copyWith(
         color: !predicateValue
-            ? Theme
-            .of(context)
-            .textTheme
-            .bodyMedium
-            ?.color
-            : Theme
-            .of(context)
-            .colorScheme
-            .error);
+            ? Theme.of(context).textTheme.bodyMedium?.color
+            : Theme.of(context).colorScheme.error);
   }
 }
 
@@ -573,11 +592,9 @@ class NameTextField extends StatelessWidget {
         context.read<SimpleCodeViewModel>().task.name = value;
       },
       decoration: const InputDecoration(
-          border: OutlineInputBorder(), labelText: "Название*"),
+          border: OutlineInputBorder(), labelText: "Название*", filled: true, fillColor: Colors.white),
       validator: (value) {
-        if (value == null || value
-            .trim()
-            .isEmpty) {
+        if (value == null || value.trim().isEmpty) {
           return "Обязательное поле";
         }
         return null;
@@ -587,7 +604,6 @@ class NameTextField extends StatelessWidget {
 }
 
 class TestCaseField extends StatelessWidget {
-
   final int number;
   final TextEditingController stdinController;
   final TextEditingController expectedController;
@@ -597,35 +613,41 @@ class TestCaseField extends StatelessWidget {
 
   const TestCaseField(
       {super.key,
-        required this.number,
-        required this.stdinController,
-        required this.expectedController,
-        required this.boxDecoration,
-        this.textStyle,
-        required this.onDelete});
+      required this.number,
+      required this.stdinController,
+      required this.expectedController,
+      required this.boxDecoration,
+      this.textStyle,
+      required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: boxDecoration,
+      margin: const EdgeInsets.only(bottom: 15),
       child: Column(
         children: [
           Row(
             children: [
               Text("Тест $number", style: textStyle),
-              IconButton(onPressed: () => onDelete(number), icon: const Icon(Icons.delete))],
+              IconButton(
+                  onPressed: () => onDelete(number),
+                  icon: const Icon(Icons.delete))
+            ],
           ),
           TextFormField(
             controller: stdinController,
+            maxLines: null,
             onChanged: (value) {
-              context.read<SimpleCodeViewModel>().task.testcases[number - 1].stdin = value;
+              context
+                  .read<SimpleCodeViewModel>()
+                  .task
+                  .testcases[number - 1]
+                  .stdin = value;
             },
             decoration: const InputDecoration(
-                border: OutlineInputBorder(), labelText: "Стандартный ввод*"),
+                border: OutlineInputBorder(), labelText: "Стандартный ввод*", filled: true, fillColor: Colors.white),
             validator: (value) {
-              if (value == null || value
-                  .trim()
-                  .isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return "Обязательное поле";
               }
               return null;
@@ -633,15 +655,18 @@ class TestCaseField extends StatelessWidget {
           ),
           TextFormField(
             controller: expectedController,
+            maxLines: null,
             onChanged: (value) {
-              context.read<SimpleCodeViewModel>().task.testcases[number - 1].expected = value;
+              context
+                  .read<SimpleCodeViewModel>()
+                  .task
+                  .testcases[number - 1]
+                  .expected = value;
             },
             decoration: const InputDecoration(
-                border: OutlineInputBorder(), labelText: "Ожидаемый вывод*"),
+                border: OutlineInputBorder(), labelText: "Ожидаемый вывод*", filled: true, fillColor: Colors.white),
             validator: (value) {
-              if (value == null || value
-                  .trim()
-                  .isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return "Обязательное поле";
               }
               return null;
@@ -651,5 +676,4 @@ class TestCaseField extends StatelessWidget {
       ),
     );
   }
-
 }

@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
         LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
       },
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffe7f3f5)),
         useMaterial3: true,
       ),
       home: const HomePage(title: 'Simple code'),

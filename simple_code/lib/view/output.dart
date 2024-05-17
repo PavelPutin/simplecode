@@ -72,30 +72,36 @@ class _OutputState extends State<Output> {
         Expanded(
           flex: 3,
           child: Card(
-            child: CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Column(
-                    children: <Widget>[
-                      Expanded(
-                          child: SizedBox(
-                        width: double.infinity,
-                        child: CodeTheme(
-                            data: CodeThemeData(styles: monokaiTheme),
-                            child: outputs[showingOutput]),
-                      )),
-                    ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Column(
+                      children: <Widget>[
+                        Expanded(
+                            child: SizedBox(
+                          width: double.infinity,
+                          child: CodeTheme(
+                              data: CodeThemeData(styles: monokaiTheme),
+                              child: outputs[showingOutput]),
+                        )),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
         Expanded(
             flex: 1,
             child: Card(
-                child: errorBoxChild
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  child: errorBoxChild,
+                )
             )
         )
       ],

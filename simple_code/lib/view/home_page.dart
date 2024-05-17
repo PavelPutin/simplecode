@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
       ),
       drawer: Drawer(
         child: Padding(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
