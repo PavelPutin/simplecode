@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:provider/provider.dart';
 import 'package:re_editor/re_editor.dart';
 import 'package:re_highlight/languages/java.dart';
 import 'package:re_highlight/languages/c.dart';
@@ -9,6 +10,8 @@ import 'package:re_highlight/languages/node-repl.dart';
 import 'package:re_highlight/languages/delphi.dart';
 import 'package:re_highlight/languages/php.dart';
 import 'package:re_highlight/languages/python.dart';
+import 'package:simple_code/model/testcase.dart';
+import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({super.key});
@@ -52,8 +55,8 @@ class _TaskFormState extends State<TaskForm> {
   final TextEditingController answerLanguageController = TextEditingController();
 
   int testsNumber = 1;
-  late final List<TextEditingController> testStdinControllers;
-  late final List<TextEditingController> testExpectedControllers;
+  final List<TextEditingController> testStdinControllers = [];
+  final List<TextEditingController> testExpectedControllers = [];
   List<bool> testEmpty = [];
 
   final CodeLineEditingController testGeneratorController = CodeLineEditingController();
@@ -66,10 +69,12 @@ class _TaskFormState extends State<TaskForm> {
     super.initState();
     // answerController.language = language;
 
-    testStdinControllers =
-        List.filled(testsNumber, TextEditingController(), growable: true);
-    testExpectedControllers =
-        List.filled(testsNumber, TextEditingController(), growable: true);
+    testStdinControllers.clear();
+    testExpectedControllers.clear();
+    for (int i = 0; i < testsNumber; i++) {
+      testStdinControllers.add(TextEditingController());
+      testExpectedControllers.add(TextEditingController());
+    }
     testEmpty = List.filled(testsNumber, false, growable: true);
   }
 
@@ -91,6 +96,34 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
+    nameController.text = context.watch<SimpleCodeViewModel>().task.name;
+    String question = context.watch<SimpleCodeViewModel>().task.questionText;
+    if (question.isNotEmpty) {
+      questionTextController.document = Document.fromHtml(question);
+    }
+    gradeController.text = context.watch<SimpleCodeViewModel>().task.defaultGrade;
+    answerController.text = context.watch<SimpleCodeViewModel>().task.answer;
+    var testcases = Provider.of<SimpleCodeViewModel>(context, listen: false).task.testcases;
+    if (testcases.isNotEmpty) {
+      testsNumber = testcases.length;
+    }
+
+    testStdinControllers.clear();
+    testExpectedControllers.clear();
+    for (int i = 0; i < testsNumber; i++) {
+      testStdinControllers.add(TextEditingController());
+      testExpectedControllers.add(TextEditingController());
+      
+      if (i < testcases.length) {
+        testStdinControllers[i].text = testcases[i].stdin;
+        testExpectedControllers[i].text = testcases[i].expected;
+      }
+    }
+
+    testEmpty = List.filled(testsNumber, false, growable: true);
+
+    testGeneratorController.text = context.watch<SimpleCodeViewModel>().task.testGenerator["customCode"] ?? "";
+
     List<Widget> taskTestcases = [];
     for (int i = 0; i < testsNumber; i++) {
       taskTestcases.add(TestCaseField(
@@ -109,6 +142,7 @@ class _TaskFormState extends State<TaskForm> {
               testStdinControllers.removeAt(number - 1).dispose();
               testExpectedControllers.removeAt(number - 1).dispose();
               testEmpty.removeAt(number - 1);
+              context.read<SimpleCodeViewModel>().task.testcases.removeAt(number - 1);
               testsNumber--;
             }
           });
@@ -316,6 +350,8 @@ class _TaskFormState extends State<TaskForm> {
                                 testStdinControllers.add(TextEditingController());
                                 testExpectedControllers.add(TextEditingController());
                                 testEmpty.add(false);
+                                //todo: move to viewmodel
+                                context.read<SimpleCodeViewModel>().task.testcases.add(Testcase("", ""));
                               });
                             },
                             child: const Text("Добавить тест")
@@ -555,7 +591,6 @@ class TestCaseField extends StatelessWidget {
             controller: stdinController,
             decoration: const InputDecoration(
                 border: OutlineInputBorder(), labelText: "Стандартный ввод*"),
-            autovalidateMode: AutovalidateMode.always,
             validator: (value) {
               if (value == null || value
                   .trim()
@@ -569,7 +604,6 @@ class TestCaseField extends StatelessWidget {
             controller: expectedController,
             decoration: const InputDecoration(
                 border: OutlineInputBorder(), labelText: "Ожидаемый вывод*"),
-            autovalidateMode: AutovalidateMode.always,
             validator: (value) {
               if (value == null || value
                   .trim()
