@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,6 +8,7 @@ import 'package:simple_code/model/task.dart';
 import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
 import 'package:yaml/yaml.dart';
+import 'package:http/http.dart' as http;
 
 import '../model/utils.dart';
 import '../model/testcase.dart';
@@ -64,16 +66,29 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> generateTask() {
-    return Future.delayed(const Duration(seconds: 1), () {
-      Map<String, dynamic> request = {
-        "answerLanguage": answerLanguage.jobeLanguageId,
-        "testGeneratorLanguage": testGeneratorLanguage.jobeLanguageId,
-        "generatedTestsAmount": generatedTestsAmount,
-        "task": _task.toJson()
-      };
-      print(request);
+  Future<void> generateTask() async {
+    Map<String, dynamic> request = {
+      "answerLanguage": answerLanguage.jobeLanguageId,
+      "testGeneratorLanguage": testGeneratorLanguage.jobeLanguageId,
+      "generatedTestsAmount": generatedTestsAmount,
+      "task": _task.toJson()
+    };
+
+    print(jsonEncode(request));
+
+    final response = await http.post(
+      Uri.parse("http://localhost:8080/runs"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8'
+      },
+      body: jsonEncode(request)
+    ).onError((error, stackTrace) {
+      print(error);
+      print(stackTrace);
+      return http.Response("", 400);
     });
+    print(response.statusCode);
+    print(response.body);
   }
 
   /// throws
