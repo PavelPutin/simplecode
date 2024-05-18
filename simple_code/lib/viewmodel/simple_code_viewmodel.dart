@@ -179,7 +179,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
         builder.element("iscombinatortemplate");
         builder.element("allowmultiplestdins");
         builder.element("answer", nest: () {
-          builder.text(_task.answer);
+          builder.cdata(_task.answer);
         });
         builder.element("validateonsave", nest: () {
           builder.text(1);
