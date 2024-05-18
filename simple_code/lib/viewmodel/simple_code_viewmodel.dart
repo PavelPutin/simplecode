@@ -117,7 +117,188 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void _updateXmlData() {
+    final builder = XmlBuilder();
+    builder.processing("xml", "version=\"1.0\"");
+    builder.element("quiz", nest: () {
+      builder.element("question", attributes: {"type": "coderunner"}, nest: () {
+        builder.element("name", nest: () {
+          builder.element("text", nest: () {
+            builder.text(_task.name);
+          });
+        });
+        builder.element("questiontext", attributes: {"format": "html"}, nest: () {
+          builder.element("text", nest: () {
+            builder.cdata(_task.questionText);
+          });
+        });
+        builder.element("generalfeedback", attributes: {"format": "html"}, nest: () {
+          builder.element("text");
+        });
+        builder.element("defaultgrade", nest: () {
+          builder.text(int.parse(_task.defaultGrade));
+        });
+        builder.element("penalty", nest: () {
+          builder.text(0);
+        });
+        builder.element("hidden", nest: () {
+          builder.text(0);
+        });
+        builder.element("idnumber");
+        builder.element("coderunnertype", nest: () {
+          builder.text("multilanguage");
+        });
+        builder.element("prototypetype", nest: () {
+          builder.text(0);
+        });
+        builder.element("allornothing", nest: () {
+          builder.text(1);
+        });
+        builder.element("penaltyregime", nest: () {
+          builder.text("10, 20, ...");
+        });
+        builder.element("precheck", nest: () {
+          builder.text(0);
+        });
+        builder.element("hidecheck", nest: () {
+          builder.text(0);
+        });
+        builder.element("showsource", nest: () {
+          builder.text(0);
+        });
+        builder.element("answerboxlines", nest: () {
+          builder.text(18);
+        });
+        builder.element("answerboxcolumns", nest: () {
+          builder.text(100);
+        });
+        builder.element("answerpreload");
+        builder.element("globalextra");
+        builder.element("useace");
+        builder.element("resultcolumns");
+        builder.element("template");
+        builder.element("iscombinatortemplate");
+        builder.element("allowmultiplestdins");
+        builder.element("answer", nest: () {
+          builder.text(_task.answer);
+        });
+        builder.element("validateonsave", nest: () {
+          builder.text(1);
+        });
+        builder.element("testsplitterre");
+        builder.element("language");
+        builder.element("acelang");
+        builder.element("sandbox");
+        builder.element("grader");
+        builder.element("cputimelimitsecs");
+        builder.element("memlimitmb");
+        builder.element("sandboxparams");
+        builder.element("templateparams");
+        builder.element("hoisttemplateparams", nest: () {
+          builder.text(1);
+        });
+        builder.element("extractcodefromjson", nest: () {
+          builder.text(1);
+        });
+        builder.element("templateparamslang", nest: () {
+          builder.text("None");
+        });
+        builder.element("templateparamsevalpertry", nest: () {
+          builder.text("0");
+        });
+        builder.element("templateparamsevald", nest: () {
+          builder.text("{}");
+        });
+        builder.element("templateparamsevald", nest: () {
+          builder.text(0);
+        });
+        builder.element("uiplugin");
+        builder.element("uiparameters");
+        builder.element("attachments", nest: () {
+          builder.text(0);
+        });
+        builder.element("attachmentsrequired", nest: () {
+          builder.text(0);
+        });
+        builder.element("maxfilesize", nest: () {
+          builder.text(10240);
+        });
+        builder.element("filenamesregex");
+        builder.element("filenamesexplain");
+        builder.element("displayfeedback", nest: () {
+          builder.text(1);
+        });
+        builder.element("giveupallowed", nest: () {
+          builder.text(0);
+        });
+        builder.element("prototypeextra");
+        builder.element("testcases", nest: () {
+          for (var testcase in _task.testcases) {
+            builder.element("testcase", nest: () {
+              builder.attribute("testtype", "0");
+              builder.attribute("useasexample", "1");
+              builder.attribute("hiderestiffail", "0");
+              builder.attribute("mark", "1.000000");
+              
+              builder.element("testcode", nest: () {
+                builder.element("text");
+              });
+              builder.element("stdin", nest: () {
+                builder.element("text", nest: () {
+                  builder.text(testcase.stdin);
+                });
+              });
+              builder.element("expected", nest: () {
+                builder.element("text", nest: () {
+                  builder.text(testcase.expected);
+                });
+              });
+              builder.element("extra", nest: () {
+                builder.element("text");
+              });
+              builder.element("display", nest: () {
+                builder.element("text", nest: () {
+                  builder.text("SHOW");
+                });
+              });
+            });
+          }
 
+          for (var testcase in _generatedTests) {
+            builder.element("testcase", nest: () {
+              builder.attribute("testtype", "0");
+              builder.attribute("useasexample", "0");
+              builder.attribute("hiderestiffail", "0");
+              builder.attribute("mark", "1.000000");
+
+              builder.element("testcode", nest: () {
+                builder.element("text");
+              });
+              builder.element("stdin", nest: () {
+                builder.element("text", nest: () {
+                  builder.text(testcase.stdin);
+                });
+              });
+              builder.element("expected", nest: () {
+                builder.element("text", nest: () {
+                  builder.text(testcase.expected);
+                });
+              });
+              builder.element("extra", nest: () {
+                builder.element("text");
+              });
+              builder.element("display", nest: () {
+                builder.element("text", nest: () {
+                  builder.text("HIDE");
+                });
+              });
+            });
+          }
+        });
+      });
+    });
+
+    final document = builder.buildDocument();
+    _moodleXmlData = document.toXmlString(pretty: true, indent: "    ");
   }
 
   /// throws
