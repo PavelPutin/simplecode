@@ -48,6 +48,7 @@ dependencies:
   re_editor: ^0.3.0
   re_highlight: ^0.0.3
   http: ^1.2.1
+  yaml_writer: ^2.0.0
 
 dev_dependencies:
   flutter_test:

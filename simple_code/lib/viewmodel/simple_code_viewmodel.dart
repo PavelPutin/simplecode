@@ -9,6 +9,7 @@ import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
 import 'package:yaml/yaml.dart';
 import 'package:http/http.dart' as http;
+import 'package:yaml_writer/yaml_writer.dart';
 
 import '../model/utils.dart';
 import '../model/testcase.dart';
@@ -22,6 +23,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
   int _generatedTestsAmount = 1;
   int get generatedTestsAmount => _generatedTestsAmount;
   set generatedTestsAmount (int value) => _generatedTestsAmount = value;
+
+  List<Testcase> _generatedTests = [];
+  UnmodifiableListView<Testcase> get generatedTests => UnmodifiableListView(_generatedTests);
 
   AvailableLanguage _answerLanguage = AvailableLanguage.java;
   AvailableLanguage get answerLanguage => _answerLanguage;
@@ -74,7 +78,6 @@ class SimpleCodeViewModel extends ChangeNotifier {
       "task": _task.toJson()
     };
 
-    print(jsonEncode(request));
 
     final response = await http.post(
       Uri.parse("http://localhost:8080/runs"),
@@ -82,13 +85,40 @@ class SimpleCodeViewModel extends ChangeNotifier {
         'Content-Type': 'application/json; charset=UTF-8'
       },
       body: jsonEncode(request)
-    ).onError((error, stackTrace) {
-      print(error);
-      print(stackTrace);
-      return http.Response("", 400);
-    });
-    print(response.statusCode);
-    print(response.body);
+    );
+
+    if (response.statusCode == 200) {
+      var body = jsonDecode(response.body) as Map<String, dynamic>;
+
+      _generatedTests.clear();
+      for (Map<String, dynamic> testcase in body["testcases"]) {
+        var stdin = testcase["stdin"];
+        var expected = testcase["expected"];
+        _generatedTests.add(Testcase(stdin, expected));
+      }
+
+      _errorMessages.clear();
+      for (var error in body["errors"]) {
+        _errorMessages.add(error);
+      }
+
+      if (_errorMessages.isEmpty) {
+        _updateYamlData();
+        _updateXmlData();
+      }
+
+      notifyListeners();
+    }
+  }
+
+  void _updateYamlData() {
+    var writer = YamlWriter();
+    _yamlData = writer.write(_task);
+    notifyListeners();
+  }
+
+  void _updateXmlData() {
+
   }
 
   /// throws
