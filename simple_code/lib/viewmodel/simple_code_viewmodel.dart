@@ -97,14 +97,14 @@ class SimpleCodeViewModel extends ChangeNotifier {
         _generatedTests.add(Testcase(stdin, expected));
       }
 
+      if (_generatedTests.isNotEmpty) {
+        _updateYamlData();
+        _updateXmlData();
+      }
+
       _errorMessages.clear();
       for (var error in body["errors"]) {
         _errorMessages.add(error);
-      }
-
-      if (_errorMessages.isEmpty) {
-        _updateYamlData();
-        _updateXmlData();
       }
 
       notifyListeners();
@@ -333,7 +333,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
             testcase["expected"].toString().trim()));
       }
       _showingIndex = 0;
-      _moodleXmlData = emptyDaraPlaceholder;
+      _updateXmlData();
       notifyListeners();
     }
   }
@@ -422,7 +422,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
             testcase.xpath("expected/text").first.innerText));
       }
       _showingIndex = 1;
-      _yamlData = emptyDaraPlaceholder;
+      _updateYamlData();
       notifyListeners();
     }
   }
