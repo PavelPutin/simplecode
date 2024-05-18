@@ -28,7 +28,7 @@ class _TaskFormState extends State<TaskForm> {
   final TextEditingController nameController = TextEditingController();
 
   // final TextEditingController questionTextController = TextEditingController();
-  final QuillController questionTextController = QuillController.basic();
+  final TextEditingController questionTextController = TextEditingController();
   bool questionTextEmpty = false;
   final TextEditingController gradeController = TextEditingController();
 
@@ -59,11 +59,6 @@ class _TaskFormState extends State<TaskForm> {
   void initState() {
     super.initState();
     // answerController.language = language;
-    questionTextController.addListener(() {
-      context.read<SimpleCodeViewModel>().task.questionText =
-          questionTextController.document.toDelta().toHtml();
-    });
-
     testStdinControllers.clear();
     testExpectedControllers.clear();
     for (int i = 0; i < testsNumber; i++) {
@@ -93,9 +88,8 @@ class _TaskFormState extends State<TaskForm> {
   Widget build(BuildContext context) {
     nameController.text = context.watch<SimpleCodeViewModel>().task.name;
     String question = context.watch<SimpleCodeViewModel>().task.questionText;
-    if (question.isNotEmpty) {
-      questionTextController.document = Document.fromHtml(question);
-    }
+    questionTextController.text = question;
+
     gradeController.text =
         context.watch<SimpleCodeViewModel>().task.defaultGrade;
     answerController.text = context.watch<SimpleCodeViewModel>().task.answer;
@@ -172,53 +166,22 @@ class _TaskFormState extends State<TaskForm> {
                     Container(margin: const EdgeInsets.only(bottom: 30), child: NameTextField(nameController: nameController)),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Условие задачи*",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                      color: !questionTextEmpty
-                                          ? Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.color
-                                          : Theme.of(context).colorScheme.error)),
-                          if (questionTextEmpty)
-                            Text("Обязательное поле",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                        color:
-                                            Theme.of(context).colorScheme.error)),
-                          QuillToolbar.simple(
-                            configurations: QuillSimpleToolbarConfigurations(
-                              controller: questionTextController,
-                              sharedConfigurations:
-                                  const QuillSharedConfigurations(
-                                locale: Locale('ru'),
-                              ),
-                            ),
-                          ),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: 100),
-                            child: Container(
-                              color: Colors.white,
-                              child: QuillEditor.basic(
-                                configurations: QuillEditorConfigurations(
-                                  controller: questionTextController,
-                                  sharedConfigurations:
-                                      const QuillSharedConfigurations(
-                                    locale: Locale('ru'),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: TextFormField(
+                        controller: questionTextController,
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), labelText: "Условие задачи*", filled: true, fillColor: Colors.white),
+                        onChanged: (value) {
+                          context.read<SimpleCodeViewModel>().task.questionText =
+                              value;
+                        },
+                        maxLines: null,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return "Обязательное поле";
+                          }
+
+                          return null;
+                        },
                       ),
                     ),
                     Container(
@@ -483,13 +446,12 @@ class _TaskFormState extends State<TaskForm> {
                               List.filled(testsNumber, false, growable: true);
                         });
                         if (_formKey.currentState!.validate() &&
-                            !questionTextController.document.isEmpty() &&
                             !answerController.isEmpty &&
                             !testGeneratorController.isEmpty) {
                           context.read<SimpleCodeViewModel>().task.name =
                               nameController.text;
                           context.read<SimpleCodeViewModel>().task.questionText =
-                              questionTextController.document.toDelta().toHtml();
+                              questionTextController.text;
                           context.read<SimpleCodeViewModel>().task.defaultGrade =
                               gradeController.text;
                           context.read<SimpleCodeViewModel>().task.answer =
@@ -529,10 +491,6 @@ class _TaskFormState extends State<TaskForm> {
                                 duration: Duration(seconds: 1),
                                 content: Text('Данные отправлены')),
                           );
-                        }
-
-                        if (questionTextController.document.isEmpty()) {
-                          setState(() => questionTextEmpty = true);
                         }
 
                         if (answerController.isEmpty) {

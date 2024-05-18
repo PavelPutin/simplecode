@@ -114,7 +114,6 @@ class SimpleCodeViewModel extends ChangeNotifier {
   void _updateYamlData() {
     var writer = YamlWriter();
     _yamlData = writer.write(_task);
-    notifyListeners();
   }
 
   void _updateXmlData() {
@@ -143,6 +142,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
       _task.questionText = data["questionText"].toString().trim();
       _task.defaultGrade = data["defaultGrade"].toString();
       _task.answer = data["answer"].toString().trim();
+      if (data.containsKey("testGenerator") && data["testGenerator"].containsKey("customCode")) {
+        _task.testGenerator["customCode"] = data["testGenerator"]["customCode"].toString();
+      }
       _task.testcases.clear();
 
       for (YamlMap testcase in data["testcases"]) {
