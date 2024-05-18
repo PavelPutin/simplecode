@@ -96,7 +96,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       _task.name = data["name"].toString().trim();
       _task.questionText = data["questionText"].toString().trim();
-      _task.defaultGrade = data["defaultGrade"];
+      _task.defaultGrade = data["defaultGrade"].toString();
       _task.answer = data["answer"].toString().trim();
       _task.testcases.clear();
 
