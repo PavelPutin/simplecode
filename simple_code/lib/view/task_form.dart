@@ -24,6 +24,8 @@ class TaskForm extends StatefulWidget {
 }
 
 class _TaskFormState extends State<TaskForm> {
+  Future<void> generation = Future.delayed(Duration.zero);
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
 
@@ -426,90 +428,99 @@ class _TaskFormState extends State<TaskForm> {
                         ],
                       ),
                     ),
-                    FilledButton(
-                      style: ButtonStyle(
-                          backgroundColor:
-                              MaterialStateProperty.all(const Color(0xff0f6cbf)),
-                          overlayColor:
-                              MaterialStateProperty.all(const Color(0xff0c589c)),
-                          shape: MaterialStateProperty.all(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          )),
-                      onPressed: () {
-                        setState(() {
-                          questionTextEmpty = false;
-                          answerEmpty = false;
-                          testGeneratorEmpty = false;
-                          testEmpty =
-                              List.filled(testsNumber, false, growable: true);
-                        });
-                        if (_formKey.currentState!.validate() &&
-                            !answerController.isEmpty &&
-                            !testGeneratorController.isEmpty) {
-                          context.read<SimpleCodeViewModel>().task.name =
-                              nameController.text;
-                          context.read<SimpleCodeViewModel>().task.questionText =
-                              questionTextController.text;
-                          context.read<SimpleCodeViewModel>().task.defaultGrade =
-                              gradeController.text;
-                          context.read<SimpleCodeViewModel>().task.answer =
-                              answerController.text;
-                          context.read<SimpleCodeViewModel>().answerLanguage = selectedAnswerLanguage;
-                          for (int i = 0;
-                              i <
-                                  context
-                                      .read<SimpleCodeViewModel>()
-                                      .task
-                                      .testcases
-                                      .length;
-                              i++) {
-                            context
-                                .read<SimpleCodeViewModel>()
-                                .task
-                                .testcases[i]
-                                .stdin = testStdinControllers[i].text;
-                            context
-                                .read<SimpleCodeViewModel>()
-                                .task
-                                .testcases[i]
-                                .expected = testExpectedControllers[i].text;
-                          }
-                          context
+                    FutureBuilder(future: generation, builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const CircularProgressIndicator();
+                      }
+                      return FilledButton(
+                        style: ButtonStyle(
+                            backgroundColor:
+                            MaterialStateProperty.all(const Color(0xff0f6cbf)),
+                            overlayColor:
+                            MaterialStateProperty.all(const Color(0xff0c589c)),
+                            shape: MaterialStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            )),
+                        onPressed: () {
+                          setState(() {
+                            questionTextEmpty = false;
+                            answerEmpty = false;
+                            testGeneratorEmpty = false;
+                            testEmpty =
+                                List.filled(testsNumber, false, growable: true);
+                          });
+                          if (_formKey.currentState!.validate() &&
+                              !answerController.isEmpty &&
+                              !testGeneratorController.isEmpty) {
+                            context.read<SimpleCodeViewModel>().task.name =
+                                nameController.text;
+                            context.read<SimpleCodeViewModel>().task.questionText =
+                                questionTextController.text;
+                            context.read<SimpleCodeViewModel>().task.defaultGrade =
+                                gradeController.text;
+                            context.read<SimpleCodeViewModel>().task.answer =
+                                answerController.text;
+                            context.read<SimpleCodeViewModel>().answerLanguage = selectedAnswerLanguage;
+                            for (int i = 0;
+                            i <
+                                context
+                                    .read<SimpleCodeViewModel>()
+                                    .task
+                                    .testcases
+                                    .length;
+                            i++) {
+                              context
                                   .read<SimpleCodeViewModel>()
                                   .task
-                                  .testGenerator["customCode"] =
-                              testGeneratorController.text;
-                          context.read<SimpleCodeViewModel>().generatedTestsAmount = int.parse(generatedTestsAmount.text);
-                          context.read<SimpleCodeViewModel>().testGeneratorLanguage = selectedTestGeneratorLanguage;
+                                  .testcases[i]
+                                  .stdin = testStdinControllers[i].text;
+                              context
+                                  .read<SimpleCodeViewModel>()
+                                  .task
+                                  .testcases[i]
+                                  .expected = testExpectedControllers[i].text;
+                            }
+                            context
+                                .read<SimpleCodeViewModel>()
+                                .task
+                                .testGenerator["customCode"] =
+                                testGeneratorController.text;
+                            context.read<SimpleCodeViewModel>().generatedTestsAmount = int.parse(generatedTestsAmount.text);
+                            context.read<SimpleCodeViewModel>().testGeneratorLanguage = selectedTestGeneratorLanguage;
 
-                          context.read<SimpleCodeViewModel>().generateTask();
+                            setState(() {
+                              generation = context.read<SimpleCodeViewModel>().generateTask();
+                            });
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                duration: Duration(seconds: 1),
-                                content: Text('Данные отправлены')),
-                          );
-                        }
 
-                        if (answerController.isEmpty) {
-                          setState(() => answerEmpty = true);
-                        }
-
-                        if (testGeneratorController.isEmpty) {
-                          setState(() => testGeneratorEmpty = true);
-                        }
-
-                        for (int i = 0; i < testsNumber; i++) {
-                          if (testStdinControllers[i].text.isEmpty ||
-                              testExpectedControllers[i].text.isEmpty) {
-                            setState(() => testEmpty[i] = true);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  duration: Duration(seconds: 1),
+                                  content: Text('Данные отправлены')),
+                            );
                           }
-                        }
-                      },
-                      child: const Text('Создать задачу'),
-                    ),
+
+                          if (answerController.isEmpty) {
+                            setState(() => answerEmpty = true);
+                          }
+
+                          if (testGeneratorController.isEmpty) {
+                            setState(() => testGeneratorEmpty = true);
+                          }
+
+                          for (int i = 0; i < testsNumber; i++) {
+                            if (testStdinControllers[i].text.isEmpty ||
+                                testExpectedControllers[i].text.isEmpty) {
+                              setState(() => testEmpty[i] = true);
+                            }
+                          }
+                        },
+                        child: const Text('Создать задачу'),
+                      );
+                    })
+                    ,
                   ],
                 ),
               ),
