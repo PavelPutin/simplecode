@@ -1,0 +1,31 @@
+services:
+
+  server:
+    image: pavelputin2003/simplecode
+    container_name: server
+    depends_on:
+      - jobe
+    networks:
+      - course-work
+
+  jobe:
+    image: trampgeek/jobeinabox:latest
+    container_name: jobe
+    networks:
+      - course-work
+
+  client:
+    container_name: client
+    image: pavelputin2003/simplecode-client:latest
+    restart: always
+    depends_on: 
+      - server
+    ports:
+      - 8088:80
+    networks:
+      - course-work
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+
+networks:
+  course-work:
