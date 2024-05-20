@@ -317,32 +317,40 @@ class SimpleCodeViewModel extends ChangeNotifier {
     if (result != null) {
       String input = readAsString(result.files.first);
 
-      YamlMap data = loadYaml(input);
-      if (!validYamlTaskFile(data)) {
-        throw Exception("invalid yaml format");
+      try {
+        YamlMap data = loadYaml(input);
+        if (!validYamlTaskFile(data)) {
+          _errorMessages.add("Недопустимый формат yaml файла");
+          notifyListeners();
+          return;
+        }
+
+        _fileNameWithoutExtension =
+            getFileNameWithoutExtension(result.files.first);
+
+        _yamlData = input;
+
+        _task.name = data["name"].toString().trim();
+        _task.questionText = data["questionText"].toString().trim();
+        _task.defaultGrade = data["defaultGrade"].toString();
+        _task.answer = data["answer"].toString().trim();
+        if (data.containsKey("testGenerator") && data["testGenerator"].containsKey("customCode")) {
+          _task.testGenerator["customCode"] = data["testGenerator"]["customCode"].toString();
+        }
+        _task.testcases.clear();
+
+        for (YamlMap testcase in data["testcases"]) {
+          _task.testcases.add(Testcase(testcase["stdin"].toString().trim(),
+              testcase["expected"].toString().trim()));
+        }
+        _showingIndex = 0;
+        _updateXmlData();
+        notifyListeners();
+      } catch (e) {
+        _errorMessages.add("Не удалось загрузить файл");
+        notifyListeners();
+        return;
       }
-
-      _fileNameWithoutExtension =
-          getFileNameWithoutExtension(result.files.first);
-
-      _yamlData = input;
-
-      _task.name = data["name"].toString().trim();
-      _task.questionText = data["questionText"].toString().trim();
-      _task.defaultGrade = data["defaultGrade"].toString();
-      _task.answer = data["answer"].toString().trim();
-      if (data.containsKey("testGenerator") && data["testGenerator"].containsKey("customCode")) {
-        _task.testGenerator["customCode"] = data["testGenerator"]["customCode"].toString();
-      }
-      _task.testcases.clear();
-
-      for (YamlMap testcase in data["testcases"]) {
-        _task.testcases.add(Testcase(testcase["stdin"].toString().trim(),
-            testcase["expected"].toString().trim()));
-      }
-      _showingIndex = 0;
-      _updateXmlData();
-      notifyListeners();
     }
   }
 
@@ -404,34 +412,42 @@ class SimpleCodeViewModel extends ChangeNotifier {
     if (result != null) {
       String input = readAsString(result.files.first);
 
-      XmlDocument data = XmlDocument.parse(input);
-      if (!validXmlTaskFile(data)) {
-        throw Exception("invalid xml format");
+      try {
+        XmlDocument data = XmlDocument.parse(input);
+        if (!validXmlTaskFile(data)) {
+          _errorMessages.add("Недопустимый формат xml файла");
+          notifyListeners();
+          return;
+        }
+
+        _fileNameWithoutExtension =
+            getFileNameWithoutExtension(result.files.first);
+
+        _moodleXmlData = input;
+
+        _task.name =
+            data.xpath("/quiz/question/name/text").first.innerText.trim();
+        _task.questionText =
+            data.xpath("/quiz/question/questiontext/text").first.innerText.trim();
+        _task.defaultGrade =
+            data.xpath("/quiz/question/defaultgrade").first.innerText.trim();
+        _task.answer =
+            data.xpath("/quiz/question/answer").first.innerText.trim();
+        _task.testcases.clear();
+
+        for (XmlNode testcase in data.xpath("/quiz/question/testcases/testcase")) {
+          _task.testcases.add(Testcase(
+              testcase.xpath("stdin/text").first.innerText,
+              testcase.xpath("expected/text").first.innerText));
+        }
+        _showingIndex = 1;
+        _updateYamlData();
+        notifyListeners();
+      } catch (e) {
+        _errorMessages.add("Не удалось загрузить файл");
+        notifyListeners();
+        return;
       }
-
-      _fileNameWithoutExtension =
-          getFileNameWithoutExtension(result.files.first);
-
-      _moodleXmlData = input;
-
-      _task.name =
-          data.xpath("/quiz/question/name/text").first.innerText.trim();
-      _task.questionText =
-          data.xpath("/quiz/question/questiontext/text").first.innerText.trim();
-      _task.defaultGrade =
-          data.xpath("/quiz/question/defaultgrade").first.innerText.trim();
-      _task.answer =
-          data.xpath("/quiz/question/answer").first.innerText.trim();
-      _task.testcases.clear();
-
-      for (XmlNode testcase in data.xpath("/quiz/question/testcases/testcase")) {
-        _task.testcases.add(Testcase(
-            testcase.xpath("stdin/text").first.innerText,
-            testcase.xpath("expected/text").first.innerText));
-      }
-      _showingIndex = 1;
-      _updateYamlData();
-      notifyListeners();
     }
   }
 
