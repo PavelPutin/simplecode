@@ -50,9 +50,17 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   UnmodifiableListView<String> get errorMessages => UnmodifiableListView(_errorMessages);
 
-  String _fileNameWithoutExtension = "task";
+  String _fileNameWithoutExtension = "";
 
-  String get fileName => _fileNameWithoutExtension ?? _task.name;
+  String get fileName {
+    if (_fileNameWithoutExtension.isNotEmpty) {
+      return _fileNameWithoutExtension;
+    }
+    if (_task.name.isNotEmpty) {
+      return _task.name;
+    }
+    return "task";
+  }
 
   String _yamlData = emptyDaraPlaceholder;
 
