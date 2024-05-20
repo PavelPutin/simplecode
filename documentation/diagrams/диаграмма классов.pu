@@ -1,0 +1,32 @@
+@startuml диаграмма классов
+
+package model {
+    class RunResult
+    class GenerationResponse
+    class Task
+    class Testcase
+    class TaskRun
+    class TestGenerator
+}
+
+package service {
+    class JobeInABoxService
+}
+
+package controller {
+    class TasksRpcController
+}
+
+class SimpleCodeApplication
+
+SimpleCodeApplication --> TasksRpcController
+TasksRpcController --> JobeInABoxService
+TasksRpcController --> GenerationResponse
+TasksRpcController --> TaskRun
+JobeInABoxService --> TaskRun
+JobeInABoxService --> RunResult
+TaskRun --> Task
+Task *-- Testcase
+Task --> TestGenerator 
+
+@enduml

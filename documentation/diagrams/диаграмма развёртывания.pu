@@ -1,15 +1,15 @@
 @startuml диаграмма развёртывания
 
-cloud "Timeweb Cloud" {
+node "Сервер" {
     package "Docker compose" {
-        component "Nginx Proxy" as nginx
-        component "Flutter Frontend" as front
-        component "Java Spring Boot Backend" as back
-        component "Jobeinabox Sandbox" as jobe
+        package "Nginx" {
+            component "pavelputin2003/simplecode\n(Flutter web приложение\nРазмещённое внутри Nginx)" as front
+        }    
+        component "pavelputin2003/simplecode\n(Spring boot приложение)" as back
+        component "trampgeek/jobeinabox\n(Сервер компиляции и выполнения программ)" as jobe
     }
 }
 
-nginx -- front : https
 front -- back
 back -- jobe
 
