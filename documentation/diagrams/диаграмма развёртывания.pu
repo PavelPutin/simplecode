@@ -3,7 +3,7 @@
 node "Сервер" {
     package "Docker compose" {
         package "Nginx" {
-            component "pavelputin2003/simplecode\n(Flutter web приложение\nРазмещённое внутри Nginx)" as front
+            component "pavelputin2003/simplecode\n(Flutter web приложение,\nразмещённое внутри Nginx)" as front
         }    
         component "pavelputin2003/simplecode\n(Spring boot приложение)" as back
         component "trampgeek/jobeinabox\n(Сервер компиляции и выполнения программ)" as jobe
