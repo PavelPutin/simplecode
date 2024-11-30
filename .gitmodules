@@ -1,4 +1,0 @@
-[submodule "SimpleCode-Backend"]
-	path = SimpleCode-Backend
-	url = https://github.com/PavelPutin/SimpleCode-Backend.git
-	branch = master
