@@ -1,35 +1,43 @@
 package ru.vsu.ppa.simplecode.service;
 
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import ru.vsu.putinpa.simplecode.model.Task;
+import org.xml.sax.SAXException;
+import ru.vsu.ppa.simplecode.model.Task;
 
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 @Service
 @Log4j2
+@AllArgsConstructor
 public class PolygonConverterService {
 
-    private record TaskMetaInfo(String name, int timeLimit, int memoryList, Path solutionSource, String language) {}
+    private final DocumentBuilder xmlDocumentBuilder;
+    private final XPath xPath;
+
+    private record TaskMetaInfo(String name, int timeLimit, int memoryList, Path solutionSource, String language) {
+    }
 
     /**
      * Converts a polygon package to a programming problem.
      *
      * @param polygonPackage the multipart file representing the polygon package
      * @return the converted programming problem
-     * @throws IOException if an I/O error occurs while converting the polygon package
      */
     @SneakyThrows(IOException.class)
     public Task convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
@@ -45,7 +53,6 @@ public class PolygonConverterService {
      *
      * @param polygonPackage the multipart file to resolve
      * @return the resolved zip file
-     * @throws IOException if an I/O error occurs while resolving the multipart file
      */
     @SneakyThrows(IOException.class)
     private ZipFile multipartResolver(MultipartFile polygonPackage) {
@@ -56,50 +63,60 @@ public class PolygonConverterService {
     }
 
     /**
-     * Extracts task meta information from a given zip file.
+     * Extracts task meta information from a zip file containing a problem.xml file.
      *
-     * @param zip the zip file to extract task meta information from
-     * @return the extracted task meta information
-     * @throws Exception if an error occurs while parsing the zip file or extracting task meta information
+     * @param zip the zip file containing the problem.xml file
+     * @return a TaskMetaInfo object containing the extracted task meta information
+     * @throws PolygonPackageIncomplete if the zip file does not contain a problem.xml file
+     * @throws PolygonProblemXMLIncomplete if the problem.xml file is incomplete or missing required elements
      */
     @SneakyThrows()
     private TaskMetaInfo extractTaskMetaInfo(ZipFile zip) {
-        // Get the problem.xml entry from the zip file
-        // TODO: check for null value
         val problemXmlDescription = zip.getEntry("problem.xml");
+        if (problemXmlDescription == null) {
+            throw new PolygonPackageIncomplete("No problem.xml entry in the zip file");
+        }
 
-        // Create a new document builder factory and builder
-        val factory = DocumentBuilderFactory.newInstance();
-        val builder = factory.newDocumentBuilder();
+        val document = getDocument(zip, problemXmlDescription);
 
-        // Parse the problem.xml entry from the zip file
-        // TODO: check for exceptions
-        val document = builder.parse(zip.getInputStream(problemXmlDescription));
-        document.getDocumentElement().normalize();
-
-        // Create a new XPath instance
-        XPath xPath = XPathFactory.newInstance().newXPath();
-
-        // Evaluate the XPath expression to get the task name elements
         val taskNameElement = (Node) xPath.evaluate("/problem/names/name", document, XPathConstants.NODE);
+        val taskName = Optional.ofNullable(taskNameElement)
+                .map(element -> element.getAttributes().getNamedItem("value"))
+                .map(Node::getNodeValue)
+                .orElse("Unknown");
 
-        // Get the value of the first task name element
-        // TODO: check for null value
-        val taskName = taskNameElement.getAttributes().getNamedItem("value").getNodeValue();
-
-        val timeLimitElement = (Double) xPath.evaluate("/problem/judging/testset/time-limit", document, XPathConstants.NUMBER);
-        val timeLimit = timeLimitElement.intValue();
+        val timeLimitMillisElement = (Double) xPath.evaluate("/problem/judging/testset/time-limit", document, XPathConstants.NUMBER);
+        val timeLimitMillis = Optional.ofNullable(timeLimitMillisElement)
+                .map(Double::intValue)
+                .orElse(1000);
 
         val memoryLimitElement = (Double) xPath.evaluate("/problem/judging/testset/memory-limit", document, XPathConstants.NUMBER);
-        val memoryLimit = memoryLimitElement.intValue();
+        val memoryLimit = Optional.ofNullable(memoryLimitElement)
+                .map(Double::intValue)
+                .orElse(268435456); // 256 MB
 
         val solutionSourceElement = (Node) xPath.evaluate("/problem/assets/solutions/solution[@tag='main']/source", document, XPathConstants.NODE);
-        val solutionSource = Paths.get(solutionSourceElement.getAttributes().getNamedItem("path").getNodeValue());
+        if (solutionSourceElement == null) {
+            throw new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source");
+        }
 
-        val languageElement = (Node) xPath.evaluate("/problem/assets/solutions/solution[@tag='main']/source", document, XPathConstants.NODE);
-        val language = languageElement.getAttributes().getNamedItem("type").getNodeValue();
+        val solutionSource = Optional.of(solutionSourceElement)
+                .map(element -> element.getAttributes().getNamedItem("path"))
+                .map(Node::getNodeValue)
+                .map(Paths::get)
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source[@path]"));
+        val language = Optional.of(solutionSourceElement)
+                .map(element -> element.getAttributes().getNamedItem("type"))
+                .map(Node::getNodeValue)
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source[@type]"));
 
         // Return a new TaskMetaInfo object with the extracted task name and default values for other fields
-        return new TaskMetaInfo(taskName, timeLimit, memoryLimit, solutionSource, language);
+        return new TaskMetaInfo(taskName, timeLimitMillis, memoryLimit, solutionSource, language);
+    }
+
+    private Document getDocument(ZipFile zip, ZipEntry problemXmlDescription) throws SAXException, IOException {
+        val document = xmlDocumentBuilder.parse(zip.getInputStream(problemXmlDescription));
+        document.getDocumentElement().normalize();
+        return document;
     }
 }
