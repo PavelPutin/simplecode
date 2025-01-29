@@ -1,10 +1,12 @@
 package ru.vsu.ppa.simplecode.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -24,13 +26,34 @@ import java.util.zip.ZipFile;
 
 @Service
 @Log4j2
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PolygonConverterService {
 
     private final DocumentBuilder xmlDocumentBuilder;
     private final XPath xPath;
 
-    private record TaskMetaInfo(String name, int timeLimit, int memoryList, Path solutionSource, String language) {
+    @Value("${application.polygon.problem.name.xpath}")
+    private String problemNameXPath;
+    @Value("${application.polygon.problem.name.attribute}")
+    private String problemNameAttribute;
+    @Value("${application.polygon.problem.name.default}")
+    private String problemNameDefault;
+    @Value("${application.polygon.problem.timeLimitMillis.xpath}")
+    private String timeLimitMillisXPath;
+    @Value("${application.polygon.problem.timeLimitMillis.default}")
+    private int timeLimitMillisDefault;
+    @Value("${application.polygon.problem.memoryLimit.xpath}")
+    private String memoryLimitXPath;
+    @Value("${application.polygon.problem.memoryLimit.default}")
+    private DataSize memoryLimitDefault;
+    @Value("${application.polygon.problem.solutionSource.xpath}")
+    private String solutionSourceXPath;
+    @Value("${application.polygon.problem.solutionSource.path-attribute}")
+    private String solutionSourcePathAttribute;
+    @Value("${application.polygon.problem.solutionSource.language-attribute}")
+    private String solutionSourceLanguageAttribute;
+
+    private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource, String language) {
     }
 
     /**
@@ -67,7 +90,7 @@ public class PolygonConverterService {
      *
      * @param zip the zip file containing the problem.xml file
      * @return a TaskMetaInfo object containing the extracted task meta information
-     * @throws PolygonPackageIncomplete if the zip file does not contain a problem.xml file
+     * @throws PolygonPackageIncomplete    if the zip file does not contain a problem.xml file
      * @throws PolygonProblemXMLIncomplete if the problem.xml file is incomplete or missing required elements
      */
     @SneakyThrows()
@@ -79,36 +102,39 @@ public class PolygonConverterService {
 
         val document = getDocument(zip, problemXmlDescription);
 
-        val taskNameElement = (Node) xPath.evaluate("/problem/names/name", document, XPathConstants.NODE);
+        val taskNameElement = (Node) xPath.evaluate(problemNameXPath, document, XPathConstants.NODE);
         val taskName = Optional.ofNullable(taskNameElement)
-                .map(element -> element.getAttributes().getNamedItem("value"))
+                .map(element -> element.getAttributes().getNamedItem(problemNameAttribute))
                 .map(Node::getNodeValue)
-                .orElse("Unknown");
+                .orElse(problemNameDefault);
 
-        val timeLimitMillisElement = (Double) xPath.evaluate("/problem/judging/testset/time-limit", document, XPathConstants.NUMBER);
-        val timeLimitMillis = Optional.ofNullable(timeLimitMillisElement)
+        val timeLimitMillisElement = (Double) xPath.evaluate(timeLimitMillisXPath, document, XPathConstants.NUMBER);
+        val timeLimitMillis = Optional.of(timeLimitMillisElement)
+                .filter(Double::isFinite)
                 .map(Double::intValue)
-                .orElse(1000);
+                .orElse(timeLimitMillisDefault);
 
-        val memoryLimitElement = (Double) xPath.evaluate("/problem/judging/testset/memory-limit", document, XPathConstants.NUMBER);
-        val memoryLimit = Optional.ofNullable(memoryLimitElement)
+        val memoryLimitElement = (Double) xPath.evaluate(memoryLimitXPath, document, XPathConstants.NUMBER);
+        val memoryLimit = Optional.of(memoryLimitElement)
+                .filter(Double::isFinite)
                 .map(Double::intValue)
-                .orElse(268435456); // 256 MB
+                .map(DataSize::ofBytes)
+                .orElse(memoryLimitDefault);
 
-        val solutionSourceElement = (Node) xPath.evaluate("/problem/assets/solutions/solution[@tag='main']/source", document, XPathConstants.NODE);
+        val solutionSourceElement = (Node) xPath.evaluate(solutionSourceXPath, document, XPathConstants.NODE);
         if (solutionSourceElement == null) {
-            throw new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source");
+            throw new PolygonProblemXMLIncomplete("Not found: " + solutionSourceXPath);
         }
 
         val solutionSource = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem("path"))
+                .map(element -> element.getAttributes().getNamedItem(solutionSourcePathAttribute))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source[@path]"));
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourcePathAttribute)));
         val language = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem("type"))
+                .map(element -> element.getAttributes().getNamedItem(solutionSourceLanguageAttribute))
                 .map(Node::getNodeValue)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: " + "/problem/assets/solutions/solution[@tag='main']/source[@type]"));
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourceLanguageAttribute)));
 
         // Return a new TaskMetaInfo object with the extracted task name and default values for other fields
         return new TaskMetaInfo(taskName, timeLimitMillis, memoryLimit, solutionSource, language);

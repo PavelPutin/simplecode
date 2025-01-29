@@ -10,6 +10,24 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+application:
+  polygon:
+    problem:
+      name:
+        xpath: /problem/names/name
+        attribute: value
+        default: Unknown
+      timeLimitMillis:
+        xpath: /problem/judging/testset/time-limit
+        default: 1000
+      memoryLimit:
+        xpath: /problem/judging/testset/memory-limit
+        default: 5MB
+      solutionSource:
+        xpath: /problem/assets/solutions/solution[@tag='main']/source
+        path-attribute: path
+        language-attribute: type
+
 jobe:
   client:
     timeout: 10s
