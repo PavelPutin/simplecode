@@ -1,4 +1,4 @@
-package ru.vsu.putinpa.simplecode.controller;
+package ru.vsu.ppa.simplecode.controller;
 
 import com.google.common.primitives.Ints;
 import lombok.RequiredArgsConstructor;
@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import ru.vsu.putinpa.simplecode.model.TaskRun;
-import ru.vsu.putinpa.simplecode.service.JobeInABoxService;
+import ru.vsu.ppa.simplecode.model.TaskRun;
+import ru.vsu.ppa.simplecode.service.JobeInABoxService;
 
 
 @CrossOrigin

@@ -1,4 +1,4 @@
-package ru.vsu.putinpa.simplecode.model;
+package ru.vsu.ppa.simplecode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;

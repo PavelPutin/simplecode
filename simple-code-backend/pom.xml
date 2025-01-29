@@ -8,7 +8,7 @@
 		<version>3.2.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>ru.vsu.putinpa</groupId>
+	<groupId>ru.vsu.ppa</groupId>
 	<artifactId>SimpleCode</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SimpleCode</name>

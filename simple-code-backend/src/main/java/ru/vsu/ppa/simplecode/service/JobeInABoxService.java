@@ -1,12 +1,12 @@
-package ru.vsu.putinpa.simplecode.service;
+package ru.vsu.ppa.simplecode.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
-import ru.vsu.putinpa.simplecode.model.GenerationResponse;
-import ru.vsu.putinpa.simplecode.model.RunResult;
-import ru.vsu.putinpa.simplecode.model.TaskRun;
-import ru.vsu.putinpa.simplecode.model.Testcase;
+import ru.vsu.ppa.simplecode.model.GenerationResponse;
+import ru.vsu.ppa.simplecode.model.RunResult;
+import ru.vsu.ppa.simplecode.model.TaskRun;
+import ru.vsu.ppa.simplecode.model.Testcase;
 
 import java.net.URI;
 import java.net.http.HttpClient;
