@@ -1,0 +1,8 @@
+services:
+  jobe:
+    image: trampgeek/jobeinabox:latest
+    container_name: jobe
+    ports:
+      - 8081:80
+    labels:
+      org.springframework.boot.service-connection: jobe

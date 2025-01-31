@@ -9,21 +9,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import ru.vsu.ppa.simplecode.model.TaskRun;
 import ru.vsu.ppa.simplecode.service.JobeInABoxService;
-
+import ru.vsu.ppa.simplecode.service.TestGenerationService;
 
 @CrossOrigin
 @RestController
 @RequiredArgsConstructor
 public class TasksRpcController {
 
-    private final JobeInABoxService jobeService;
+    private final TestGenerationService testGenerationService;
 
     @PostMapping("/runs")
     public ResponseEntity<?> submitRun(@RequestBody TaskRun taskRun) {
         if (Ints.tryParse(taskRun.getGeneratedTestsAmount()) == null) {
             return ResponseEntity.badRequest().body("Количество тестов должно быть целым числом");
         }
-        var result = jobeService.runs(taskRun);
+        var result = testGenerationService.runs(taskRun);
         return ResponseEntity.ok().header("Content-Type", "application/json; charset=UTF-8").body(result);
     }
 }
