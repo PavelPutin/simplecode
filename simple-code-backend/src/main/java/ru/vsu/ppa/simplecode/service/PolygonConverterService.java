@@ -12,6 +12,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.model.Task;
+import ru.vsu.ppa.simplecode.util.PathHelper;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
@@ -53,7 +54,9 @@ public class PolygonConverterService {
     @Value("${application.polygon.problem.solutionSource.language-attribute}")
     private String solutionSourceLanguageAttribute;
 
-    private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource, String language) {
+    private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource,
+                                String mainSolutionLanguage) {
+
     }
 
     /**
@@ -67,8 +70,23 @@ public class PolygonConverterService {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
             val metaInfo = extractTaskMetaInfo(zip);
             log.debug("Task meta info: {}", metaInfo);
+
+            String mainSolution = extractMainSolution(zip, metaInfo);
+            log.debug("Main solution: {}", mainSolution);
         }
         return null;
+    }
+
+    private String extractMainSolution(ZipFile zip, TaskMetaInfo metaInfo) throws IOException {
+        String pathToSolution = PathHelper.toUnixString(metaInfo.solutionSource());
+        val mainSolutionEntry = zip.getEntry(pathToSolution);
+        if (mainSolutionEntry == null) {
+            throw new PolygonPackageIncomplete("No main solution entry in the zip file");
+        }
+        try (val is = zip.getInputStream(mainSolutionEntry)) {
+            // TODO: fix big files problem
+            return new String(is.readAllBytes());
+        }
     }
 
     /**
