@@ -60,6 +60,20 @@ public class PolygonConverterService {
     private String solutionSourcePathAttribute;
     @Value("${application.polygon.problem.solutionSource.language-attribute}")
     private String solutionSourceLanguageAttribute;
+    @Value("${application.polygon.problem.testSets.xpath}")
+    private String testSetsXpath;
+    @Value("${application.polygon.problem.testSets.name.attribute}")
+    private String testSetsNameAttribute;
+    @Value("${application.polygon.problem.testSets.input-path-pattern.xpath}")
+    private String pathPatternXpath;
+    @Value("${application.polygon.problem.testSets.tests.xpath}")
+    private String testSetsTestsXpath;
+    @Value("${application.polygon.problem.testSets.tests.sample.attribute}")
+    private String testSetsTestSampleAttribute;
+    @Value("${application.polygon.problem.testSets.tests.method.attribute}")
+    private String testSetsTestMethodAttribute;
+    @Value("${application.polygon.problem.testSets.tests.cmd.attribute}")
+    private String testSetsTestCmdAttribute;
 
     private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource,
                                 String mainSolutionLanguage, List<TestCaseMetaInfo> testCases) {
@@ -153,8 +167,7 @@ public class PolygonConverterService {
                 .map(Node::getNodeValue)
                 .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourceLanguageAttribute)));
 
-        String testSetsXpathExpression = "/problem/judging/testset";
-        NodeList testSets = (NodeList) xPath.evaluate(testSetsXpathExpression, document, XPathConstants.NODESET);
+        NodeList testSets = (NodeList) xPath.evaluate(testSetsXpath, document, XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
                 .mapToObj(testSets::item)
                 .map(this::extractTestSet)
@@ -174,26 +187,26 @@ public class PolygonConverterService {
      */
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        String testSetName = testSet.getAttributes().getNamedItem("name").getNodeValue();
-        String pathPattern = Optional.ofNullable((String) xPath.evaluate("input-path-pattern", testSet, XPathConstants.STRING))
+        String testSetName = testSet.getAttributes().getNamedItem(testSetsNameAttribute).getNodeValue();
+        String pathPattern = Optional.ofNullable((String) xPath.evaluate(pathPatternXpath, testSet, XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
-        NodeList tests = (NodeList) xPath.evaluate("tests/test", testSet, XPathConstants.NODESET);
+        NodeList tests = (NodeList) xPath.evaluate(testSetsTestsXpath, testSet, XPathConstants.NODESET);
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
             NamedNodeMap test = tests.item(testNumber).getAttributes();
 
-            boolean sample = Optional.ofNullable(test.getNamedItem("sample"))
+            boolean sample = Optional.ofNullable(test.getNamedItem(testSetsTestSampleAttribute))
                     .map(Node::getNodeValue)
                     .map(Boolean::parseBoolean)
                     .orElse(false);
 
-            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem("method"))
+            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem(testSetsTestMethodAttribute))
                     .map(Node::getNodeValue)
                     .map(TestCaseMetaInfo.Method::parse)
                     .orElse(TestCaseMetaInfo.Method.MANUAL);
 
-            String generationCommand = Optional.ofNullable(test.getNamedItem("cmd"))
+            String generationCommand = Optional.ofNullable(test.getNamedItem(testSetsTestCmdAttribute))
                     .map(Node::getNodeValue)
                     .orElse(null);
 

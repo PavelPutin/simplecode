@@ -27,6 +27,20 @@ application:
         xpath: /problem/assets/solutions/solution[@tag='main']/source
         path-attribute: path
         language-attribute: type
+      testSets:
+        xpath: /problem/judging/testset
+        name:
+          attribute: name
+        input-path-pattern:
+          xpath: input-path-pattern
+        tests:
+          xpath: tests/test
+          sample:
+            attribute: sample
+          method:
+            attribute: method
+          cmd:
+            attribute: cmd
 
 jobe:
   client:
