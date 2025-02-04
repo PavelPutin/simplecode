@@ -9,9 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.model.Task;
+import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -21,7 +24,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -55,7 +62,7 @@ public class PolygonConverterService {
     private String solutionSourceLanguageAttribute;
 
     private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource,
-                                String mainSolutionLanguage) {
+                                String mainSolutionLanguage, List<TestCaseMetaInfo> testCases) {
 
     }
 
@@ -103,14 +110,6 @@ public class PolygonConverterService {
         return new ZipFile(zipPath.toFile());
     }
 
-    /**
-     * Extracts task meta information from a zip file containing a problem.xml file.
-     *
-     * @param zip the zip file containing the problem.xml file
-     * @return a TaskMetaInfo object containing the extracted task meta information
-     * @throws PolygonPackageIncomplete    if the zip file does not contain a problem.xml file
-     * @throws PolygonProblemXMLIncomplete if the problem.xml file is incomplete or missing required elements
-     */
     @SneakyThrows()
     private TaskMetaInfo extractTaskMetaInfo(ZipFile zip) {
         val problemXmlDescription = zip.getEntry("problem.xml");
@@ -154,13 +153,68 @@ public class PolygonConverterService {
                 .map(Node::getNodeValue)
                 .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourceLanguageAttribute)));
 
+        String testSetsXpathExpression = "/problem/judging/testset";
+        NodeList testSets = (NodeList) xPath.evaluate(testSetsXpathExpression, document, XPathConstants.NODESET);
+        List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
+                .mapToObj(testSets::item)
+                .map(this::extractTestSet)
+                .flatMap(Collection::stream)
+                .toList();
+
         // Return a new TaskMetaInfo object with the extracted task name and default values for other fields
-        return new TaskMetaInfo(taskName, timeLimitMillis, memoryLimit, solutionSource, language);
+        return new TaskMetaInfo(taskName, timeLimitMillis, memoryLimit, solutionSource, language, testCasesMetaInfo);
     }
 
+    /**
+     * Извлекает набор тестов из узла XML.
+     *
+     * @param testSet узел XML, представляющий набор тестов
+     * @return список метаинформации о тестовых случаях
+     * @throws RuntimeException если произошла ошибка при извлечении набора тестов
+     */
+    @SneakyThrows
+    private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
+        String testSetName = testSet.getAttributes().getNamedItem("name").getNodeValue();
+        String pathPattern = Optional.ofNullable((String) xPath.evaluate("input-path-pattern", testSet, XPathConstants.STRING))
+                .orElse(testSetName + "/%02d");
+        NodeList tests = (NodeList) xPath.evaluate("tests/test", testSet, XPathConstants.NODESET);
+
+        List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
+        for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
+            NamedNodeMap test = tests.item(testNumber).getAttributes();
+
+            boolean sample = Optional.ofNullable(test.getNamedItem("sample"))
+                    .map(Node::getNodeValue)
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+
+            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem("method"))
+                    .map(Node::getNodeValue)
+                    .map(TestCaseMetaInfo.Method::parse)
+                    .orElse(TestCaseMetaInfo.Method.MANUAL);
+
+            String generationCommand = Optional.ofNullable(test.getNamedItem("cmd"))
+                    .map(Node::getNodeValue)
+                    .orElse(null);
+
+            testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName, pathPattern, sample, method, generationCommand));
+        }
+        return testCasesMetaInfo;
+    }
+
+    /**
+     * Получает документ из ZIP-файла.
+     *
+     * @param zip                   ZIP-файл, из которого нужно получить документ
+     * @param problemXmlDescription ZIP-запись, представляющая XML-описание проблемы
+     * @return документ, полученный из ZIP-файла
+     * @throws SAXException если произошла ошибка при разборе XML-документа
+     * @throws IOException  если произошла ошибка ввода-вывода
+     */
     private Document getDocument(ZipFile zip, ZipEntry problemXmlDescription) throws SAXException, IOException {
         val document = xmlDocumentBuilder.parse(zip.getInputStream(problemXmlDescription));
         document.getDocumentElement().normalize();
         return document;
     }
+
 }
