@@ -120,18 +120,18 @@ public class PolygonConverterService {
 
         val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.solutionSourceXPath(), document, XPathConstants.NODE);
         if (solutionSourceElement == null) {
-            throw new PolygonProblemXMLIncomplete("Not found: " + problemXmlParsingProperties.solutionSourceXPath());
+            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.solutionSourceXPath());
         }
 
         val solutionSource = Optional.of(solutionSourceElement)
                 .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourcePathAttribute()))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourcePathAttribute())));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourcePathAttribute()));
         val language = Optional.of(solutionSourceElement)
                 .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourceLanguageAttribute()))
                 .map(Node::getNodeValue)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourceLanguageAttribute())));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourceLanguageAttribute()));
 
         NodeList testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(), document, XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
