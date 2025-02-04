@@ -17,17 +17,17 @@ application:
         xpath: /problem/names/name
         attribute: value
         default: Unknown
-      timeLimitMillis:
+      time-limit-millis:
         xpath: /problem/judging/testset/time-limit
         default: 1000
-      memoryLimit:
+      memory-limit:
         xpath: /problem/judging/testset/memory-limit
         default: 5MB
-      solutionSource:
+      solution-source:
         xpath: /problem/assets/solutions/solution[@tag='main']/source
         path-attribute: path
         language-attribute: type
-      testSets:
+      test-sets:
         xpath: /problem/judging/testset
         name:
           attribute: name

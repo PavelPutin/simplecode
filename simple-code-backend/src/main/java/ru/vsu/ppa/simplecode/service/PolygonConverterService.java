@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +12,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
 import ru.vsu.ppa.simplecode.model.Task;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
@@ -39,41 +39,7 @@ public class PolygonConverterService {
 
     private final DocumentBuilder xmlDocumentBuilder;
     private final XPath xPath;
-
-    @Value("${application.polygon.problem.name.xpath}")
-    private String problemNameXPath;
-    @Value("${application.polygon.problem.name.attribute}")
-    private String problemNameAttribute;
-    @Value("${application.polygon.problem.name.default}")
-    private String problemNameDefault;
-    @Value("${application.polygon.problem.timeLimitMillis.xpath}")
-    private String timeLimitMillisXPath;
-    @Value("${application.polygon.problem.timeLimitMillis.default}")
-    private int timeLimitMillisDefault;
-    @Value("${application.polygon.problem.memoryLimit.xpath}")
-    private String memoryLimitXPath;
-    @Value("${application.polygon.problem.memoryLimit.default}")
-    private DataSize memoryLimitDefault;
-    @Value("${application.polygon.problem.solutionSource.xpath}")
-    private String solutionSourceXPath;
-    @Value("${application.polygon.problem.solutionSource.path-attribute}")
-    private String solutionSourcePathAttribute;
-    @Value("${application.polygon.problem.solutionSource.language-attribute}")
-    private String solutionSourceLanguageAttribute;
-    @Value("${application.polygon.problem.testSets.xpath}")
-    private String testSetsXpath;
-    @Value("${application.polygon.problem.testSets.name.attribute}")
-    private String testSetsNameAttribute;
-    @Value("${application.polygon.problem.testSets.input-path-pattern.xpath}")
-    private String pathPatternXpath;
-    @Value("${application.polygon.problem.testSets.tests.xpath}")
-    private String testSetsTestsXpath;
-    @Value("${application.polygon.problem.testSets.tests.sample.attribute}")
-    private String testSetsTestSampleAttribute;
-    @Value("${application.polygon.problem.testSets.tests.method.attribute}")
-    private String testSetsTestMethodAttribute;
-    @Value("${application.polygon.problem.testSets.tests.cmd.attribute}")
-    private String testSetsTestCmdAttribute;
+    private final ProblemXmlParsingProperties problemXmlParsingProperties;
 
     private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource,
                                 String mainSolutionLanguage, List<TestCaseMetaInfo> testCases) {
@@ -133,41 +99,41 @@ public class PolygonConverterService {
 
         val document = getDocument(zip, problemXmlDescription);
 
-        val taskNameElement = (Node) xPath.evaluate(problemNameXPath, document, XPathConstants.NODE);
+        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.problemNameXPath(), document, XPathConstants.NODE);
         val taskName = Optional.ofNullable(taskNameElement)
-                .map(element -> element.getAttributes().getNamedItem(problemNameAttribute))
+                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.problemNameAttribute()))
                 .map(Node::getNodeValue)
-                .orElse(problemNameDefault);
+                .orElse(problemXmlParsingProperties.problemNameDefault());
 
-        val timeLimitMillisElement = (Double) xPath.evaluate(timeLimitMillisXPath, document, XPathConstants.NUMBER);
+        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillisXPath(), document, XPathConstants.NUMBER);
         val timeLimitMillis = Optional.of(timeLimitMillisElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
-                .orElse(timeLimitMillisDefault);
+                .orElse(problemXmlParsingProperties.timeLimitMillisDefault());
 
-        val memoryLimitElement = (Double) xPath.evaluate(memoryLimitXPath, document, XPathConstants.NUMBER);
+        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimitXPath(), document, XPathConstants.NUMBER);
         val memoryLimit = Optional.of(memoryLimitElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
                 .map(DataSize::ofBytes)
-                .orElse(memoryLimitDefault);
+                .orElse(problemXmlParsingProperties.memoryLimitDefault());
 
-        val solutionSourceElement = (Node) xPath.evaluate(solutionSourceXPath, document, XPathConstants.NODE);
+        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.solutionSourceXPath(), document, XPathConstants.NODE);
         if (solutionSourceElement == null) {
-            throw new PolygonProblemXMLIncomplete("Not found: " + solutionSourceXPath);
+            throw new PolygonProblemXMLIncomplete("Not found: " + problemXmlParsingProperties.solutionSourceXPath());
         }
 
         val solutionSource = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem(solutionSourcePathAttribute))
+                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourcePathAttribute()))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourcePathAttribute)));
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourcePathAttribute())));
         val language = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem(solutionSourceLanguageAttribute))
+                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourceLanguageAttribute()))
                 .map(Node::getNodeValue)
-                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(solutionSourceXPath, solutionSourceLanguageAttribute)));
+                .orElseThrow(() -> new PolygonProblemXMLIncomplete("Not found: %s[@%s]".formatted(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourceLanguageAttribute())));
 
-        NodeList testSets = (NodeList) xPath.evaluate(testSetsXpath, document, XPathConstants.NODESET);
+        NodeList testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(), document, XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
                 .mapToObj(testSets::item)
                 .map(this::extractTestSet)
@@ -187,26 +153,26 @@ public class PolygonConverterService {
      */
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        String testSetName = testSet.getAttributes().getNamedItem(testSetsNameAttribute).getNodeValue();
-        String pathPattern = Optional.ofNullable((String) xPath.evaluate(pathPatternXpath, testSet, XPathConstants.STRING))
+        String testSetName = testSet.getAttributes().getNamedItem(problemXmlParsingProperties.testSetsNameAttribute()).getNodeValue();
+        String pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(), testSet, XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
-        NodeList tests = (NodeList) xPath.evaluate(testSetsTestsXpath, testSet, XPathConstants.NODESET);
+        NodeList tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(), testSet, XPathConstants.NODESET);
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
             NamedNodeMap test = tests.item(testNumber).getAttributes();
 
-            boolean sample = Optional.ofNullable(test.getNamedItem(testSetsTestSampleAttribute))
+            boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestSampleAttribute()))
                     .map(Node::getNodeValue)
                     .map(Boolean::parseBoolean)
                     .orElse(false);
 
-            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem(testSetsTestMethodAttribute))
+            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestMethodAttribute()))
                     .map(Node::getNodeValue)
                     .map(TestCaseMetaInfo.Method::parse)
                     .orElse(TestCaseMetaInfo.Method.MANUAL);
 
-            String generationCommand = Optional.ofNullable(test.getNamedItem(testSetsTestCmdAttribute))
+            String generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestCmdAttribute()))
                     .map(Node::getNodeValue)
                     .orElse(null);
 
