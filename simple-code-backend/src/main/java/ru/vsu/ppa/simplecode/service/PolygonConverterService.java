@@ -40,17 +40,14 @@ public class PolygonConverterService {
     private final XPath xPath;
     private final ProblemXmlParsingProperties problemXmlParsingProperties;
 
-    private record TaskMetaInfo(
-            String name,
-            int timeLimit,
-            DataSize memoryLimit,
-            ExecutableMetaInfo mainSolution,
-            List<ExecutableMetaInfo> generators,
-            List<TestCaseMetaInfo> testCases) {}
+    private record TaskMetaInfo(String name,
+                                int timeLimit,
+                                DataSize memoryLimit,
+                                ExecutableMetaInfo mainSolution,
+                                List<ExecutableMetaInfo> generators,
+                                List<TestCaseMetaInfo> testCases) {}
 
-    private record ExecutableMetaInfo(
-            Path path,
-            String Language) {}
+    private record ExecutableMetaInfo(Path path, String Language) {}
 
     /**
      * Converts a polygon package to a programming problem.
@@ -98,7 +95,7 @@ public class PolygonConverterService {
         return new ZipFile(zipPath.toFile());
     }
 
-    @SneakyThrows()
+    @SneakyThrows
     private TaskMetaInfo extractTaskMetaInfo(ZipFile zip) {
         val problemXmlDescription = zip.getEntry("problem.xml");
         if (problemXmlDescription == null) {
@@ -133,32 +130,28 @@ public class PolygonConverterService {
                 .map(DataSize::ofBytes)
                 .orElse(problemXmlParsingProperties.memoryLimitDefault());
 
-        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.solutionSourceXPath(),
+        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.mainSolutionSourceXPath(),
                                                           document,
                                                           XPathConstants.NODE);
         if (solutionSourceElement == null) {
-            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.solutionSourceXPath());
+            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.mainSolutionSourceXPath());
         }
 
         val mainSolution = extractExecutable(solutionSourceElement,
-                                                            problemXmlParsingProperties.solutionSourceXPath(),
-                                                            problemXmlParsingProperties.solutionSourcePathAttribute(),
-                                                            problemXmlParsingProperties.solutionSourceLanguageAttribute());
+                                             problemXmlParsingProperties.mainSolutionSourceXPath());
 
-        val xPathToExecutables = "problem/files/executables/executable/source";
-        val executables = (NodeList) xPath.evaluate(xPathToExecutables, document, XPathConstants.NODESET);
+        val executables = (NodeList) xPath.evaluate(problemXmlParsingProperties.otherExecutableSourcesXPath(),
+                                                    document,
+                                                    XPathConstants.NODESET);
 
         List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
                 .mapToObj(executables::item)
-                .map(n -> extractExecutable(n,
-                                            xPathToExecutables,
-                                            "path",
-                                            "language"))
+                .map(n -> extractExecutable(n, problemXmlParsingProperties.otherExecutableSourcesXPath()))
                 .toList();
 
         val testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(),
-                                                      document,
-                                                      XPathConstants.NODESET);
+                                                 document,
+                                                 XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
                 .mapToObj(testSets::item)
                 .map(this::extractTestSet)
@@ -174,21 +167,20 @@ public class PolygonConverterService {
                                 testCasesMetaInfo);
     }
 
-    private ExecutableMetaInfo extractExecutable(Node node,
-                                                 String nodeXPath,
-                                                 String pathAttribute,
-                                                 String languageAttribute) {
+    private ExecutableMetaInfo extractExecutable(Node node, String nodeXPath) {
         val pathToSource = Optional.of(node)
                 .map(element -> element.getAttributes()
-                        .getNamedItem(pathAttribute))
+                        .getNamedItem(problemXmlParsingProperties.executablePathAttribute()))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath, pathAttribute));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
+                                                                                        problemXmlParsingProperties.executablePathAttribute()));
         val language = Optional.of(node)
                 .map(element -> element.getAttributes()
-                        .getNamedItem(languageAttribute))
+                        .getNamedItem(problemXmlParsingProperties.executableLanguageAttribute()))
                 .map(Node::getNodeValue)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath, languageAttribute));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
+                                                                                        problemXmlParsingProperties.executableLanguageAttribute()));
         return new ExecutableMetaInfo(pathToSource, language);
     }
 
@@ -205,12 +197,12 @@ public class PolygonConverterService {
                 .getNamedItem(problemXmlParsingProperties.testSetsNameAttribute())
                 .getNodeValue();
         val pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(),
-                                                                         testSet,
-                                                                         XPathConstants.STRING))
+                                                                      testSet,
+                                                                      XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
         val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
-                                                   testSet,
-                                                   XPathConstants.NODESET);
+                                              testSet,
+                                              XPathConstants.NODESET);
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {

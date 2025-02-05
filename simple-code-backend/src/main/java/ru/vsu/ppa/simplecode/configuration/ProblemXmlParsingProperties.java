@@ -20,12 +20,14 @@ public record ProblemXmlParsingProperties(
         String memoryLimitXPath,
         @Value("${application.polygon.problem.memory-limit.default}")
         DataSize memoryLimitDefault,
-        @Value("${application.polygon.problem.solution-source.xpath}")
-        String solutionSourceXPath,
-        @Value("${application.polygon.problem.solution-source.path-attribute}")
-        String solutionSourcePathAttribute,
-        @Value("${application.polygon.problem.solution-source.language-attribute}")
-        String solutionSourceLanguageAttribute,
+        @Value("${application.polygon.problem.executables.main-solution.xpath}")
+        String mainSolutionSourceXPath,
+        @Value("${application.polygon.problem.executables.other.xpath}")
+        String otherExecutableSourcesXPath,
+        @Value("${application.polygon.problem.executables.path-attribute}")
+        String executablePathAttribute,
+        @Value("${application.polygon.problem.executables.language-attribute}")
+        String executableLanguageAttribute,
         @Value("${application.polygon.problem.test-sets.xpath}")
         String testSetsXpath,
         @Value("${application.polygon.problem.test-sets.name.attribute}")

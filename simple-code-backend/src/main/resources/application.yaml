@@ -23,8 +23,11 @@ application:
       memory-limit:
         xpath: /problem/judging/testset/memory-limit
         default: 5MB
-      solution-source:
-        xpath: /problem/assets/solutions/solution[@tag='main']/source
+      executables:
+        main-solution:
+          xpath: /problem/assets/solutions/solution[@tag='main']/source
+        other:
+          xpath: /problem/files/executables/executable/source
         path-attribute: path
         language-attribute: type
       test-sets:
