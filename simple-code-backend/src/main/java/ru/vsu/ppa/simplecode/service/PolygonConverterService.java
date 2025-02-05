@@ -41,10 +41,17 @@ public class PolygonConverterService {
     private final XPath xPath;
     private final ProblemXmlParsingProperties problemXmlParsingProperties;
 
-    private record TaskMetaInfo(String name, int timeLimit, DataSize memoryLimit, Path solutionSource,
-                                String mainSolutionLanguage, List<TestCaseMetaInfo> testCases) {
+    private record TaskMetaInfo(
+            String name,
+            int timeLimit,
+            DataSize memoryLimit,
+            ExecutableMetaInfo mainSolution,
+            List<ExecutableMetaInfo> generators,
+            List<TestCaseMetaInfo> testCases) {}
 
-    }
+    private record ExecutableMetaInfo(
+            Path path,
+            String Language) {}
 
     /**
      * Converts a polygon package to a programming problem.
@@ -65,7 +72,7 @@ public class PolygonConverterService {
     }
 
     private String extractMainSolution(ZipFile zip, TaskMetaInfo metaInfo) throws IOException {
-        String pathToSolution = PathHelper.toUnixString(metaInfo.solutionSource());
+        String pathToSolution = PathHelper.toUnixString(metaInfo.mainSolution().path());
         val mainSolutionEntry = zip.getEntry(pathToSolution);
         if (mainSolutionEntry == null) {
             throw new PolygonPackageIncomplete("No main solution entry in the zip file");
@@ -123,17 +130,25 @@ public class PolygonConverterService {
             throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.solutionSourceXPath());
         }
 
-        val solutionSource = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourcePathAttribute()))
-                .map(Node::getNodeValue)
-                .map(Paths::get)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourcePathAttribute()));
-        val language = Optional.of(solutionSourceElement)
-                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.solutionSourceLanguageAttribute()))
-                .map(Node::getNodeValue)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties.solutionSourceXPath(), problemXmlParsingProperties.solutionSourceLanguageAttribute()));
+        ExecutableMetaInfo mainSolution = extractExecutable(solutionSourceElement,
+                                                            problemXmlParsingProperties.solutionSourceXPath(),
+                                                            problemXmlParsingProperties.solutionSourcePathAttribute(),
+                                                            problemXmlParsingProperties.solutionSourceLanguageAttribute());
 
-        NodeList testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(), document, XPathConstants.NODESET);
+        String xPathToExecutables = "problem/files/executables/executable/source";
+        NodeList executables = (NodeList) xPath.evaluate(xPathToExecutables, document, XPathConstants.NODESET);
+
+        List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
+                .mapToObj(executables::item)
+                .map(n -> extractExecutable(n,
+                                            xPathToExecutables,
+                                            "path",
+                                            "language"))
+                .toList();
+
+        NodeList testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(),
+                                                      document,
+                                                      XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
                 .mapToObj(testSets::item)
                 .map(this::extractTestSet)
@@ -141,7 +156,30 @@ public class PolygonConverterService {
                 .toList();
 
         // Return a new TaskMetaInfo object with the extracted task name and default values for other fields
-        return new TaskMetaInfo(taskName, timeLimitMillis, memoryLimit, solutionSource, language, testCasesMetaInfo);
+        return new TaskMetaInfo(taskName,
+                                timeLimitMillis,
+                                memoryLimit,
+                                mainSolution,
+                                executablesMetaInfo,
+                                testCasesMetaInfo);
+    }
+
+    private ExecutableMetaInfo extractExecutable(Node node,
+                                                 String nodeXPath,
+                                                 String pathAttribute,
+                                                 String languageAttribute) {
+        val pathToSource = Optional.of(node)
+                .map(element -> element.getAttributes()
+                        .getNamedItem(pathAttribute))
+                .map(Node::getNodeValue)
+                .map(Paths::get)
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath, pathAttribute));
+        val language = Optional.of(node)
+                .map(element -> element.getAttributes()
+                        .getNamedItem(languageAttribute))
+                .map(Node::getNodeValue)
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath, languageAttribute));
+        return new ExecutableMetaInfo(pathToSource, language);
     }
 
     /**
