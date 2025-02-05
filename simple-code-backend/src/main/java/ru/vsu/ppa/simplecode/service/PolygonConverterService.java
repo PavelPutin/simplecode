@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -141,13 +140,13 @@ public class PolygonConverterService {
             throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.solutionSourceXPath());
         }
 
-        ExecutableMetaInfo mainSolution = extractExecutable(solutionSourceElement,
+        val mainSolution = extractExecutable(solutionSourceElement,
                                                             problemXmlParsingProperties.solutionSourceXPath(),
                                                             problemXmlParsingProperties.solutionSourcePathAttribute(),
                                                             problemXmlParsingProperties.solutionSourceLanguageAttribute());
 
-        String xPathToExecutables = "problem/files/executables/executable/source";
-        NodeList executables = (NodeList) xPath.evaluate(xPathToExecutables, document, XPathConstants.NODESET);
+        val xPathToExecutables = "problem/files/executables/executable/source";
+        val executables = (NodeList) xPath.evaluate(xPathToExecutables, document, XPathConstants.NODESET);
 
         List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
                 .mapToObj(executables::item)
@@ -157,7 +156,7 @@ public class PolygonConverterService {
                                             "language"))
                 .toList();
 
-        NodeList testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(),
+        val testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(),
                                                       document,
                                                       XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
@@ -202,20 +201,20 @@ public class PolygonConverterService {
      */
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        String testSetName = testSet.getAttributes()
+        val testSetName = testSet.getAttributes()
                 .getNamedItem(problemXmlParsingProperties.testSetsNameAttribute())
                 .getNodeValue();
-        String pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(),
+        val pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(),
                                                                          testSet,
                                                                          XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
-        NodeList tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
+        val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
                                                    testSet,
                                                    XPathConstants.NODESET);
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
-            NamedNodeMap test = tests.item(testNumber)
+            val test = tests.item(testNumber)
                     .getAttributes();
 
             boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestSampleAttribute()))
@@ -223,12 +222,12 @@ public class PolygonConverterService {
                     .map(Boolean::parseBoolean)
                     .orElse(false);
 
-            TestCaseMetaInfo.Method method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestMethodAttribute()))
+            val method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestMethodAttribute()))
                     .map(Node::getNodeValue)
                     .map(TestCaseMetaInfo.Method::parse)
                     .orElse(TestCaseMetaInfo.Method.MANUAL);
 
-            String generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestCmdAttribute()))
+            val generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestCmdAttribute()))
                     .map(Node::getNodeValue)
                     .orElse(null);
 
