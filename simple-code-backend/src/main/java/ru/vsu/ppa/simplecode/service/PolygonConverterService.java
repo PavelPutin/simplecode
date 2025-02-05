@@ -72,7 +72,8 @@ public class PolygonConverterService {
     }
 
     private String extractMainSolution(ZipFile zip, TaskMetaInfo metaInfo) throws IOException {
-        String pathToSolution = PathHelper.toUnixString(metaInfo.mainSolution().path());
+        String pathToSolution = PathHelper.toUnixString(metaInfo.mainSolution()
+                                                                .path());
         val mainSolutionEntry = zip.getEntry(pathToSolution);
         if (mainSolutionEntry == null) {
             throw new PolygonPackageIncomplete("No main solution entry in the zip file");
@@ -91,7 +92,8 @@ public class PolygonConverterService {
      */
     @SneakyThrows(IOException.class)
     private ZipFile multipartResolver(MultipartFile polygonPackage) {
-        val tmpdir = Files.createTempDirectory(null).toString();
+        val tmpdir = Files.createTempDirectory(null)
+                .toString();
         val zipPath = Paths.get(tmpdir, polygonPackage.getOriginalFilename());
         polygonPackage.transferTo(zipPath);
         return new ZipFile(zipPath.toFile());
@@ -106,26 +108,35 @@ public class PolygonConverterService {
 
         val document = getDocument(zip, problemXmlDescription);
 
-        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.problemNameXPath(), document, XPathConstants.NODE);
+        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.problemNameXPath(),
+                                                    document,
+                                                    XPathConstants.NODE);
         val taskName = Optional.ofNullable(taskNameElement)
-                .map(element -> element.getAttributes().getNamedItem(problemXmlParsingProperties.problemNameAttribute()))
+                .map(element -> element.getAttributes()
+                        .getNamedItem(problemXmlParsingProperties.problemNameAttribute()))
                 .map(Node::getNodeValue)
                 .orElse(problemXmlParsingProperties.problemNameDefault());
 
-        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillisXPath(), document, XPathConstants.NUMBER);
+        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillisXPath(),
+                                                             document,
+                                                             XPathConstants.NUMBER);
         val timeLimitMillis = Optional.of(timeLimitMillisElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
                 .orElse(problemXmlParsingProperties.timeLimitMillisDefault());
 
-        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimitXPath(), document, XPathConstants.NUMBER);
+        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimitXPath(),
+                                                         document,
+                                                         XPathConstants.NUMBER);
         val memoryLimit = Optional.of(memoryLimitElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
                 .map(DataSize::ofBytes)
                 .orElse(problemXmlParsingProperties.memoryLimitDefault());
 
-        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.solutionSourceXPath(), document, XPathConstants.NODE);
+        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.solutionSourceXPath(),
+                                                          document,
+                                                          XPathConstants.NODE);
         if (solutionSourceElement == null) {
             throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.solutionSourceXPath());
         }
@@ -191,14 +202,21 @@ public class PolygonConverterService {
      */
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        String testSetName = testSet.getAttributes().getNamedItem(problemXmlParsingProperties.testSetsNameAttribute()).getNodeValue();
-        String pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(), testSet, XPathConstants.STRING))
+        String testSetName = testSet.getAttributes()
+                .getNamedItem(problemXmlParsingProperties.testSetsNameAttribute())
+                .getNodeValue();
+        String pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(),
+                                                                         testSet,
+                                                                         XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
-        NodeList tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(), testSet, XPathConstants.NODESET);
+        NodeList tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
+                                                   testSet,
+                                                   XPathConstants.NODESET);
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
-            NamedNodeMap test = tests.item(testNumber).getAttributes();
+            NamedNodeMap test = tests.item(testNumber)
+                    .getAttributes();
 
             boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestSampleAttribute()))
                     .map(Node::getNodeValue)
@@ -230,7 +248,8 @@ public class PolygonConverterService {
      */
     private Document getDocument(ZipFile zip, ZipEntry problemXmlDescription) throws SAXException, IOException {
         val document = xmlDocumentBuilder.parse(zip.getInputStream(problemXmlDescription));
-        document.getDocumentElement().normalize();
+        document.getDocumentElement()
+                .normalize();
         return document;
     }
 
