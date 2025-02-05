@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 public class Task {
+
     private String name;
     private String questionText;
     private String defaultGrade;

@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RunResult {
+
     private int outcome;
     private String cmpinfo;
     private String stdout;

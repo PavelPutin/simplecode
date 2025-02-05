@@ -39,7 +39,8 @@ public class JobeInABoxService {
             throw new RuntimeException("Empty response");
         }
         if (runResult.getOutcome() == 15) {
-            return runResult.getStdout().stripTrailing();
+            return runResult.getStdout()
+                    .stripTrailing();
         }
 
         if (runResult.getOutcome() == 11) {
@@ -72,7 +73,8 @@ public class JobeInABoxService {
     private void clientErrorsHandler(
             HttpRequest request,
             ClientHttpResponse response) throws IOException {
-        val message = new String(response.getBody().readAllBytes());
+        val message = new String(response.getBody()
+                                         .readAllBytes());
         log.debug("Error {}", message);
         throw new RuntimeException(message);
     }

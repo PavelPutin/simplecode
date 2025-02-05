@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class Testcase {
+
     private String stdin;
     private String expected;
 }
