@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,20 +62,27 @@ public class PolygonConverterService {
             val metaInfo = extractTaskMetaInfo(zip);
             log.debug("Task meta info: {}", metaInfo);
 
-            String mainSolution = extractMainSolution(zip, metaInfo);
+            String mainSolution = extractEntryContent(zip, metaInfo.mainSolution.path());
             log.debug("Main solution: {}", mainSolution);
+
+            List<String> generators = metaInfo.generators()
+                    .stream()
+                    .map(g -> extractEntryContent(zip, g.path()))
+                    .toList();
+            IntStream.range(0, generators.size())
+                    .forEach(i -> log.debug("Generator {}: {}", i + 1, generators.get(i)));
         }
         return null;
     }
 
-    private String extractMainSolution(ZipFile zip, TaskMetaInfo metaInfo) throws IOException {
-        String pathToSolution = PathHelper.toUnixString(metaInfo.mainSolution()
-                                                                .path());
-        val mainSolutionEntry = zip.getEntry(pathToSolution);
-        if (mainSolutionEntry == null) {
-            throw new PolygonPackageIncomplete("No main solution entry in the zip file");
+    @SneakyThrows
+    private String extractEntryContent(ZipFile zip, Path pathToEntry) {
+        String fixedPath = PathHelper.toUnixString(pathToEntry);
+        val extractingEntry = zip.getEntry(fixedPath);
+        if (extractingEntry == null) {
+            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
         }
-        try (val is = zip.getInputStream(mainSolutionEntry)) {
+        try (val is = zip.getInputStream(extractingEntry)) {
             // TODO: fix big files problem
             return new String(is.readAllBytes());
         }
