@@ -12,11 +12,7 @@ public record TestCaseMetaInfo(
         GENERATED;
 
         public static Method parse(String source) {
-            return switch (source.toUpperCase()) {
-                case "MANUAL" -> MANUAL;
-                case "GENERATED" -> GENERATED;
-                default -> throw new IllegalArgumentException("Unknown method: " + source);
-            };
+            return Method.valueOf(source.toUpperCase());
         }
     }
 }
