@@ -14,5 +14,5 @@ public record RunSpec(
         Parameters parameters) {
 
     public record Parameters(
-            @JsonProperty("runargs ") List<String> runArguments) {}
+            @JsonProperty("runargs") List<String> runArguments) {}
 }

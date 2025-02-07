@@ -1,5 +1,6 @@
 package ru.vsu.ppa.simplecode.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -12,8 +13,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
-import ru.vsu.ppa.simplecode.model.Task;
-import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
+import ru.vsu.ppa.simplecode.model.*;
 import ru.vsu.ppa.simplecode.util.PathHelper;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -24,10 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -40,15 +41,7 @@ public class PolygonConverterService {
     private final DocumentBuilder xmlDocumentBuilder;
     private final XPath xPath;
     private final ProblemXmlParsingProperties problemXmlParsingProperties;
-
-    private record TaskMetaInfo(String name,
-                                int timeLimit,
-                                DataSize memoryLimit,
-                                ExecutableMetaInfo mainSolution,
-                                List<ExecutableMetaInfo> generators,
-                                List<TestCaseMetaInfo> testCases) {}
-
-    private record ExecutableMetaInfo(Path path, String Language) {}
+    private final JobeInABoxService jobeInABoxService;
 
     /**
      * Converts a polygon package to a programming problem.
@@ -62,17 +55,95 @@ public class PolygonConverterService {
             val metaInfo = extractTaskMetaInfo(zip);
             log.debug("Task meta info: {}", metaInfo);
 
-            String mainSolution = extractEntryContent(zip, metaInfo.mainSolution.path());
+            val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
+                                                     metaInfo.mainSolution.language());
             log.debug("Main solution: {}", mainSolution);
 
-            List<String> generators = metaInfo.generators()
+//            List<String> generators = metaInfo.generators()
+//                    .stream()
+//                    .map(g -> extractEntryContent(zip, g.path()))
+//                    .toList();
+//            IntStream.range(0, generators.size())
+//                    .forEach(i -> log.debug("Generator {}: {}", i + 1, generators.get(i)));
+
+            Map<String, ProgramSourceCode> generators = new HashMap<>();
+            for (var generator : metaInfo.generators()) {
+                val name = PathHelper.getFileNameWithoutExtension(generator.path()
+                                                                          .getFileName());
+                val content = extractEntryContent(zip, generator.path());
+                val generatorSourceCode = new ProgramSourceCode(content, generator.language());
+                generators.put(name.toString(), generatorSourceCode);
+            }
+            log.debug("Generators: {}", generators);
+
+            /*
+            Варианты обработки тест-кейсов:
+            1. Есть все входные и выходные файлы ручных тестов и генерируемых тестов.
+            2. Есть только входные файлы ручных тестов.
+
+            В итоге для всех тест-кейсов хочу получить структуры: stdin, expected, display
+            */
+
+            /*
+            Шаг 1: разделить тесты на 2 группы: имеющие входные данные и не имеющие входных данных
+            Шаг 2: извлечь входные данные для первой группы
+            Шаг 3: сгенерировать входные данные для второй группы
+            Шаг 4: разделить тесты на 2 группы: имеющие выходные данные и не имеющие выходных данных
+            Шаг 5: извлечь выходные данные для первой группы
+            Шаг 6: сгенерировать выходные данные для второй группы
+            */
+            List<TestCaseMetaInfo> needGeneration = new ArrayList<>();
+            List<String> stdinValues = metaInfo.testCases()
                     .stream()
-                    .map(g -> extractEntryContent(zip, g.path()))
-                    .toList();
-            IntStream.range(0, generators.size())
-                    .forEach(i -> log.debug("Generator {}: {}", i + 1, generators.get(i)));
+                    .<String>mapMulti((testCase, consumer) -> {
+                        try {
+                            String content = extractEntryContent(zip, testCase.stdinSource());
+                            consumer.accept(content);
+                        } catch (PolygonPackageIncomplete e) {
+                            needGeneration.add(testCase);
+                        }
+                    })
+                    .peek(v -> log.debug("Stdin value: {}", v))
+                    .collect(Collectors.toCollection(ArrayList::new));
+
+            List<RunSpec> errors = new ArrayList<>();
+            stdinValues.addAll(
+                    needGeneration.stream()
+                            .filter(testCase -> testCase.method() == TestCaseMetaInfo.Method.GENERATED)
+                            .map(TestCaseMetaInfo::generationCommand)
+                            .mapMulti(generateStdin(generators, errors))
+                            .peek(v -> log.debug("Generated value: {}", v))
+                            .toList()
+            );
+
+            log.debug("Stdin values: {}", stdinValues.size());
+            stdinValues.forEach(log::debug);
+            log.debug("Errors: {}", errors.size());
+            errors.forEach(log::debug);
         }
         return null;
+    }
+
+    private BiConsumer<String, Consumer<String>> generateStdin(Map<String, ProgramSourceCode> generators,
+                                                               List<RunSpec> errors) {
+        return (cmd, consumer) -> {
+            log.debug("Generation: {}", cmd);
+            val tokens = cmd.split(" ");
+            val generatorName = tokens[0];
+            val generator = generators.get(generatorName);
+            List<String> args = Arrays.asList(tokens)
+                    .subList(1, tokens.length);
+            val runSpeck = new RunSpec(generator.language()
+                                               .getJobeNotation(),
+                                       generator.content(),
+                                       null,
+                                       new RunSpec.Parameters(args));
+            try {
+                consumer.accept(jobeInABoxService.submitRun(runSpeck));
+            } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+                errors.add(runSpeck);
+            }
+        };
     }
 
     @SneakyThrows
@@ -187,6 +258,7 @@ public class PolygonConverterService {
                 .map(element -> element.getAttributes()
                         .getNamedItem(problemXmlParsingProperties.executableLanguageAttribute()))
                 .map(Node::getNodeValue)
+                .map(SourceCodeLanguage::getFromPolygonNotation)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
                                                                                         problemXmlParsingProperties.executableLanguageAttribute()));
         return new ExecutableMetaInfo(pathToSource, language);
@@ -204,10 +276,14 @@ public class PolygonConverterService {
         val testSetName = testSet.getAttributes()
                 .getNamedItem(problemXmlParsingProperties.testSetsNameAttribute())
                 .getNodeValue();
-        val pathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.pathPatternXpath(),
-                                                                      testSet,
-                                                                      XPathConstants.STRING))
+        val stdinPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.stdinPathPatternXpath(),
+                                                                           testSet,
+                                                                           XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
+        val expectedPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.expectedPathPatternXpath(),
+                                                                              testSet,
+                                                                              XPathConstants.STRING))
+                .orElse(testSetName + "/%02d.a");
         val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
                                               testSet,
                                               XPathConstants.NODESET);
@@ -216,6 +292,9 @@ public class PolygonConverterService {
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
             val test = tests.item(testNumber)
                     .getAttributes();
+
+            val stdinSource = Paths.get(stdinPathPattern.formatted(testNumber + 1));
+            val expectedSource = Paths.get(expectedPathPattern.formatted(testNumber + 1));
 
             boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestSampleAttribute()))
                     .map(Node::getNodeValue)
@@ -231,7 +310,13 @@ public class PolygonConverterService {
                     .map(Node::getNodeValue)
                     .orElse(null);
 
-            testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName, pathPattern, sample, method, generationCommand));
+            testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName,
+                                                       testNumber + 1,
+                                                       stdinSource,
+                                                       expectedSource,
+                                                       sample,
+                                                       method,
+                                                       generationCommand));
         }
         return testCasesMetaInfo;
     }
@@ -251,5 +336,14 @@ public class PolygonConverterService {
                 .normalize();
         return document;
     }
+
+    private record TaskMetaInfo(String name,
+                                int timeLimit,
+                                DataSize memoryLimit,
+                                ExecutableMetaInfo mainSolution,
+                                List<ExecutableMetaInfo> generators,
+                                List<TestCaseMetaInfo> testCases) {}
+
+    private record ExecutableMetaInfo(Path path, SourceCodeLanguage language) {}
 
 }

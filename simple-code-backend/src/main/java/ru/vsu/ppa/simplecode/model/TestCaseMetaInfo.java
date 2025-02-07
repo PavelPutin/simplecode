@@ -1,8 +1,12 @@
 package ru.vsu.ppa.simplecode.model;
 
+import java.nio.file.Path;
+
 public record TestCaseMetaInfo(
         String testSetName,
-        String pathPattern,
+        int number,
+        Path stdinSource,
+        Path expectedSource,
         boolean sample,
         TestCaseMetaInfo.Method method,
         String generationCommand) {

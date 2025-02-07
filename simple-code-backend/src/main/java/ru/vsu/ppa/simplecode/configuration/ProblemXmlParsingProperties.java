@@ -32,8 +32,10 @@ public record ProblemXmlParsingProperties(
         String testSetsXpath,
         @Value("${application.polygon.problem.test-sets.name.attribute}")
         String testSetsNameAttribute,
-        @Value("${application.polygon.problem.test-sets.input-path-pattern.xpath}")
-        String pathPatternXpath,
+        @Value("${application.polygon.problem.test-sets.stdin-path-pattern.xpath}")
+        String stdinPathPatternXpath,
+        @Value("${application.polygon.problem.test-sets.expected-path-pattern.xpath}")
+        String expectedPathPatternXpath,
         @Value("${application.polygon.problem.test-sets.tests.xpath}")
         String testSetsTestsXpath,
         @Value("${application.polygon.problem.test-sets.tests.sample.attribute}")

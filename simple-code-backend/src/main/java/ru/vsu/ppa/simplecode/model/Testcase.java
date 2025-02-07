@@ -2,11 +2,13 @@ package ru.vsu.ppa.simplecode.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class Testcase {
 
-    private String stdin;
-    private String expected;
+    private final String stdin;
+    private final String expected;
+    private boolean display;
 }

@@ -22,4 +22,12 @@ public class PathHelper {
             default -> throw new RuntimeException("Unknown separator");
         };
     }
+
+    public static String getFileNameWithoutExtension(Path path) {
+        if (path == null) {
+            return null;
+        }
+        String fileName = path.getFileName().toString();
+        return fileName.replaceAll("(?<!^)[.][^.]*$", "");
+    }
 }

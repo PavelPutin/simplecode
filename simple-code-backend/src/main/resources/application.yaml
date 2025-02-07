@@ -34,8 +34,10 @@ application:
         xpath: /problem/judging/testset
         name:
           attribute: name
-        input-path-pattern:
+        stdin-path-pattern:
           xpath: input-path-pattern
+        expected-path-pattern:
+          xpath: answer-path-pattern
         tests:
           xpath: tests/test
           sample:
