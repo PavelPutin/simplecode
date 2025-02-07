@@ -23,10 +23,8 @@ public class JobeInABoxService {
 
     private final RestClient jobeRestClient;
 
-    public String submitRun(String languageId, String sourceCode, String input)
+    public String submitRun(RunSpec runSpec)
             throws ExecutionException, InterruptedException, JsonProcessingException {
-        val runSpec = new RunSpec(languageId, sourceCode, input);
-
         val runResult = jobeRestClient.post()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(runSpec)

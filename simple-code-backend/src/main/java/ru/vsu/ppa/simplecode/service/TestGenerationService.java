@@ -3,8 +3,10 @@ package ru.vsu.ppa.simplecode.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import lombok.val;
 import org.springframework.stereotype.Service;
 import ru.vsu.ppa.simplecode.model.GenerationResponse;
+import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.TaskRun;
 import ru.vsu.ppa.simplecode.model.Testcase;
 
@@ -28,10 +30,12 @@ public class TestGenerationService {
             for (var testcase : runSpec.getTask()
                     .getTestcases()) {
                 try {
-                    var stdout = jobeInABoxService.submitRun(runSpec.getAnswerLanguage(),
-                                                             runSpec.getTask()
-                                                                     .getAnswer(),
-                                                             testcase.getStdin());
+                    val runSpeck = new RunSpec(runSpec.getAnswerLanguage(),
+                                               runSpec.getTask()
+                                                       .getAnswer(),
+                                               testcase.getStdin(),
+                                               null);
+                    var stdout = jobeInABoxService.submitRun(runSpeck);
                     if (!stdout.equals(testcase.getExpected())) {
                         String message = "Неправильный ответ%nОжидалось%n%s%nПолучено%n%s%n".formatted(testcase.getExpected(),
                                                                                                        stdout);
@@ -59,16 +63,21 @@ public class TestGenerationService {
                 for (int i = 0; i < generatedTestsAmount && errorsInRow <= 4; i++) {
                     try {
                         log.debug("History: {}", history.toString());
-                        var stdin = jobeInABoxService.submitRun(runSpec.getTestGeneratorLanguage(),
-                                                                runSpec.getTask()
-                                                                        .getTestGenerator()
-                                                                        .getCustomCode(),
-                                                                history.toString());
+                        val stdinGenerationRun = new RunSpec(runSpec.getTestGeneratorLanguage(),
+                                                             runSpec.getTask()
+                                                                     .getTestGenerator()
+                                                                     .getCustomCode(),
+                                                             history.toString(),
+                                                             null);
+                        var stdin = jobeInABoxService.submitRun(stdinGenerationRun);
                         history.add(stdin);
-                        var expected = jobeInABoxService.submitRun(runSpec.getAnswerLanguage(),
-                                                                   runSpec.getTask()
-                                                                           .getAnswer(),
-                                                                   stdin);
+
+                        val expectedGenerationRun = new RunSpec(runSpec.getAnswerLanguage(),
+                                                                runSpec.getTask()
+                                                                        .getAnswer(),
+                                                                stdin,
+                                                                null);
+                        var expected = jobeInABoxService.submitRun(expectedGenerationRun);
                         testcases.add(new Testcase(stdin, expected));
                         errorsInRow = 0;
                     } catch (CompilationError e) {
