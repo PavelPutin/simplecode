@@ -59,22 +59,6 @@ public class PolygonConverterService {
             Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
             log.debug("Generators: {}", generators);
 
-            /*
-            Варианты обработки тест-кейсов:
-            1. Есть все входные и выходные файлы ручных тестов и генерируемых тестов.
-            2. Есть только входные файлы ручных тестов.
-
-            В итоге для всех тест-кейсов хочу получить структуры: stdin, expected, display
-            */
-
-            /*
-            Шаг 1: разделить тесты на 2 группы: имеющие входные данные и не имеющие входных данных
-            Шаг 2: извлечь входные данные для первой группы
-            Шаг 3: сгенерировать входные данные для второй группы
-            Шаг 4: разделить тесты на 2 группы: имеющие выходные данные и не имеющие выходных данных
-            Шаг 5: извлечь выходные данные для первой группы
-            Шаг 6: сгенерировать выходные данные для второй группы
-            */
             List<PolygonTestcase> testCases = metaInfo.testCases()
                     .stream()
                     .map(PolygonTestcase::new)
@@ -85,78 +69,107 @@ public class PolygonConverterService {
 
             testCases.forEach(testCase -> {
                 log.debug("Test case: {}/{}",
-                          testCase.getMetaInfo()
-                                  .testSetName(),
-                          testCase.getMetaInfo()
-                                  .number() + 1);
-                try {
-                    val stdin = extractEntryContent(zip,
-                                                    testCase.getMetaInfo()
-                                                            .stdinSource()).trim();
-                    testCase.setStdin(stdin);
-                    log.debug("Extract stdin value: {}", stdin);
-                } catch (PolygonPackageIncomplete e1) {
-                    if (testCase.getMetaInfo()
-                            .method() == TestCaseMetaInfo.Method.GENERATED) {
-                        val cmd = testCase.getMetaInfo()
-                                .generationCommand();
-                        val tokens = cmd.split(" ");
-                        val generatorName = tokens[0];
-                        val generator = generators.get(generatorName);
-                        List<String> args = Arrays.asList(tokens)
-                                .subList(1, tokens.length);
-                        val runSpec = new RunSpec(generator.language()
-                                                          .getJobeNotation(),
-                                                  generator.content(),
-                                                  null,
-                                                  new RunSpec.Parameters(args));
-                        try {
-                            val stdin = jobeInABoxService.submitRun(runSpec);
-                            testCase.setStdin(stdin);
-                            log.debug("Generate stdin value: {}", stdin);
-                        } catch (ExecutionException |
-                                 InterruptedException |
-                                 JsonProcessingException e) {
-                            stdinGenerationErrors.add(runSpec);
-                        }
-                    }
-                }
+                          testCase.getMetaInfo().testSetName(),
+                          testCase.getMetaInfo().number() + 1);
 
-                try {
-                    val expected = extractEntryContent(zip,
-                                                       testCase.getMetaInfo()
-                                                               .expectedSource()).trim();
-                    testCase.setExpected(expected);
-                    log.debug("Extract expected value: {}", expected);
-                } catch (PolygonPackageIncomplete e1) {
-                    if (testCase.getStdin() != null) {
-                        val runSpec = new RunSpec(mainSolution.language()
-                                                          .getJobeNotation(),
-                                                  mainSolution.content(),
-                                                  testCase.getStdin(),
-                                                  null);
-                        try {
-                            val expected = jobeInABoxService.submitRun(runSpec);
-                            testCase.setExpected(expected);
-                            log.debug("Generate expected value: {}", expected);
-                        } catch (ExecutionException |
-                                 InterruptedException |
-                                 JsonProcessingException e) {
-                            expectedGenerationErrors.add(runSpec);
-                        }
-                    }
-                }
+                String stdin = getStdinValue(testCase, zip, generators, stdinGenerationErrors);
+                testCase.setStdin(stdin);
+
+                String expected = getExpectedValue(testCase, zip, mainSolution, expectedGenerationErrors);
+                testCase.setExpected(expected);
             });
 
             log.debug("Test cases ({}):", testCases.size());
             testCases.forEach(testCase -> log.debug("Test case: {}", testCase));
+
             log.debug("Stdin generation errors ({}):", stdinGenerationErrors.size());
             stdinGenerationErrors.forEach(log::debug);
+
             log.debug("Expected generation errors ({}):", expectedGenerationErrors.size());
             expectedGenerationErrors.forEach(log::debug);
 
             return null;
         }
+    }
+
+    private String getExpectedValue(PolygonTestcase testCase,
+                                    ZipFile zip,
+                                    ProgramSourceCode mainSolution,
+                                    List<RunSpec> expectedGenerationErrors) {
+        String result = null;
+        try {
+            result = extractExpected(testCase, zip);
+            log.debug("Extract expected value: {}", result);
+        } catch (PolygonPackageIncomplete e1) {
+            if (testCase.getStdin() != null) {
+                result = generateExpected(testCase, mainSolution, expectedGenerationErrors);
+                log.debug("Generate expected value: {}", result);
+            }
+        }
+        return result;
+    }
+
+    private String generateExpected(PolygonTestcase testCase,
+                                    ProgramSourceCode mainSolution,
+                                    List<RunSpec> expectedGenerationErrors) {
+        val runSpec = new RunSpec(mainSolution.language()
+                                          .getJobeNotation(),
+                                  mainSolution.content(),
+                                  testCase.getStdin(),
+                                  null);
+        try {
+            return jobeInABoxService.submitRun(runSpec);
+        } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+            expectedGenerationErrors.add(runSpec);
+        }
+        return null;
+    }
+
+    private String extractExpected(PolygonTestcase testCase, ZipFile zip) {
+        return extractEntryContent(zip, testCase.getMetaInfo().expectedSource()).trim();
+    }
+
+    private String getStdinValue(PolygonTestcase testCase,
+                                 ZipFile zip,
+                                 Map<String, ProgramSourceCode> generators,
+                                 List<RunSpec> stdinGenerationErrors) {
+        String result = null;
+        try {
+            result = extractStdin(testCase, zip);
+            log.debug("Extract stdin value: {}", result);
+        } catch (PolygonPackageIncomplete e1) {
+            if (testCase.getMetaInfo().method() == TestCaseMetaInfo.Method.GENERATED) {
+                result = generateStdin(testCase, generators, stdinGenerationErrors);
+                log.debug("Generate stdin value: {}", result);
+            }
+        }
+        return result;
+    }
+
+    private String generateStdin(PolygonTestcase testCase,
+                                 Map<String, ProgramSourceCode> generators,
+                                 List<RunSpec> stdinGenerationErrors) {
+        val cmd = testCase.getMetaInfo()
+                .generationCommand();
+        val tokens = cmd.split(" ");
+        val generatorName = tokens[0];
+        val generator = generators.get(generatorName);
+        List<String> args = Arrays.asList(tokens)
+                .subList(1, tokens.length);
+        val runSpec = new RunSpec(generator.language()
+                                          .getJobeNotation(), generator.content(), null, new RunSpec.Parameters(args));
+        try {
+            return jobeInABoxService.submitRun(runSpec);
+        } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+            stdinGenerationErrors.add(runSpec);
+        }
+        return null;
+    }
+
+    private String extractStdin(PolygonTestcase testCase, ZipFile zip) {
+        return extractEntryContent(zip,
+                                   testCase.getMetaInfo()
+                                           .stdinSource()).trim();
     }
 
     private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipFile zip) {
