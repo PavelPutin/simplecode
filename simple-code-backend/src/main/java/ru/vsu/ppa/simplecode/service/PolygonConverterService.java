@@ -26,9 +26,6 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -78,66 +75,88 @@ public class PolygonConverterService {
             Шаг 5: извлечь выходные данные для первой группы
             Шаг 6: сгенерировать выходные данные для второй группы
             */
-            List<TestCaseMetaInfo> needGeneration = new ArrayList<>();
-            List<String> stdinValues = extractStdinValues(metaInfo, zip, needGeneration);
+            List<PolygonTestcase> testCases = metaInfo.testCases()
+                    .stream()
+                    .map(PolygonTestcase::new)
+                    .toList();
 
-            List<RunSpec> errors = new ArrayList<>();
-            stdinValues.addAll(generateStdinValues(needGeneration, generators, errors));
+            List<RunSpec> stdinGenerationErrors = new ArrayList<>();
+            List<RunSpec> expectedGenerationErrors = new ArrayList<>();
 
-            log.debug("Stdin values: {}", stdinValues.size());
-            stdinValues.forEach(log::debug);
-            log.debug("Errors: {}", errors.size());
-            errors.forEach(log::debug);
-        }
-        return null;
-    }
-
-    private List<String> generateStdinValues(List<TestCaseMetaInfo> needGeneration,
-                                             Map<String, ProgramSourceCode> generators,
-                                             List<RunSpec> errors) {
-        return needGeneration.stream()
-                .filter(testCase -> testCase.method() == TestCaseMetaInfo.Method.GENERATED)
-                .map(TestCaseMetaInfo::generationCommand)
-                .mapMulti(generateStdin(generators, errors))
-                .peek(v -> log.debug("Generated value: {}", v))
-                .toList();
-    }
-
-    private BiConsumer<String, Consumer<String>> generateStdin(Map<String, ProgramSourceCode> generators,
-                                                               List<RunSpec> errors) {
-        return (cmd, consumer) -> {
-            log.debug("Generation: {}", cmd);
-            val tokens = cmd.split(" ");
-            val generatorName = tokens[0];
-            val generator = generators.get(generatorName);
-            List<String> args = Arrays.asList(tokens)
-                    .subList(1, tokens.length);
-            val runSpec = new RunSpec(generator.language()
-                                               .getJobeNotation(),
-                                       generator.content(),
-                                       null,
-                                       new RunSpec.Parameters(args));
-            try {
-                consumer.accept(jobeInABoxService.submitRun(runSpec));
-            } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
-                errors.add(runSpec);
-            }
-        };
-    }
-
-    private List<String> extractStdinValues(TaskMetaInfo metaInfo, ZipFile zip, List<TestCaseMetaInfo> needGeneration) {
-        return metaInfo.testCases()
-                .stream()
-                .<String>mapMulti((testCase, consumer) -> {
-                    try {
-                        String content = extractEntryContent(zip, testCase.stdinSource());
-                        consumer.accept(content);
-                    } catch (PolygonPackageIncomplete e) {
-                        needGeneration.add(testCase);
+            testCases.forEach(testCase -> {
+                log.debug("Test case: {}/{}",
+                          testCase.getMetaInfo()
+                                  .testSetName(),
+                          testCase.getMetaInfo()
+                                  .number() + 1);
+                try {
+                    val stdin = extractEntryContent(zip,
+                                                    testCase.getMetaInfo()
+                                                            .stdinSource()).trim();
+                    testCase.setStdin(stdin);
+                    log.debug("Extract stdin value: {}", stdin);
+                } catch (PolygonPackageIncomplete e1) {
+                    if (testCase.getMetaInfo()
+                            .method() == TestCaseMetaInfo.Method.GENERATED) {
+                        val cmd = testCase.getMetaInfo()
+                                .generationCommand();
+                        val tokens = cmd.split(" ");
+                        val generatorName = tokens[0];
+                        val generator = generators.get(generatorName);
+                        List<String> args = Arrays.asList(tokens)
+                                .subList(1, tokens.length);
+                        val runSpec = new RunSpec(generator.language()
+                                                          .getJobeNotation(),
+                                                  generator.content(),
+                                                  null,
+                                                  new RunSpec.Parameters(args));
+                        try {
+                            val stdin = jobeInABoxService.submitRun(runSpec);
+                            testCase.setStdin(stdin);
+                            log.debug("Generate stdin value: {}", stdin);
+                        } catch (ExecutionException |
+                                 InterruptedException |
+                                 JsonProcessingException e) {
+                            stdinGenerationErrors.add(runSpec);
+                        }
                     }
-                })
-                .peek(v -> log.debug("Stdin value: {}", v))
-                .collect(Collectors.toCollection(ArrayList::new));
+                }
+
+                try {
+                    val expected = extractEntryContent(zip,
+                                                       testCase.getMetaInfo()
+                                                               .expectedSource()).trim();
+                    testCase.setExpected(expected);
+                    log.debug("Extract expected value: {}", expected);
+                } catch (PolygonPackageIncomplete e1) {
+                    if (testCase.getStdin() != null) {
+                        val runSpec = new RunSpec(mainSolution.language()
+                                                          .getJobeNotation(),
+                                                  mainSolution.content(),
+                                                  testCase.getStdin(),
+                                                  null);
+                        try {
+                            val expected = jobeInABoxService.submitRun(runSpec);
+                            testCase.setExpected(expected);
+                            log.debug("Generate expected value: {}", expected);
+                        } catch (ExecutionException |
+                                 InterruptedException |
+                                 JsonProcessingException e) {
+                            expectedGenerationErrors.add(runSpec);
+                        }
+                    }
+                }
+            });
+
+            log.debug("Test cases ({}):", testCases.size());
+            testCases.forEach(testCase -> log.debug("Test case: {}", testCase));
+            log.debug("Stdin generation errors ({}):", stdinGenerationErrors.size());
+            stdinGenerationErrors.forEach(log::debug);
+            log.debug("Expected generation errors ({}):", expectedGenerationErrors.size());
+            expectedGenerationErrors.forEach(log::debug);
+
+            return null;
+        }
     }
 
     private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipFile zip) {
@@ -317,7 +336,7 @@ public class PolygonConverterService {
                     .orElse(null);
 
             testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName,
-                                                       testNumber + 1,
+                                                       testNumber,
                                                        stdinSource,
                                                        expectedSource,
                                                        sample,
