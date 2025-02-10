@@ -112,15 +112,15 @@ public class PolygonConverterService {
             val generator = generators.get(generatorName);
             List<String> args = Arrays.asList(tokens)
                     .subList(1, tokens.length);
-            val runSpeck = new RunSpec(generator.language()
+            val runSpec = new RunSpec(generator.language()
                                                .getJobeNotation(),
                                        generator.content(),
                                        null,
                                        new RunSpec.Parameters(args));
             try {
-                consumer.accept(jobeInABoxService.submitRun(runSpeck));
+                consumer.accept(jobeInABoxService.submitRun(runSpec));
             } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
-                errors.add(runSpeck);
+                errors.add(runSpec);
             }
         };
     }
