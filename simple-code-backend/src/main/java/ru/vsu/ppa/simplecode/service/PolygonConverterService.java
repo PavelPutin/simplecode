@@ -59,21 +59,7 @@ public class PolygonConverterService {
                                                      metaInfo.mainSolution.language());
             log.debug("Main solution: {}", mainSolution);
 
-//            List<String> generators = metaInfo.generators()
-//                    .stream()
-//                    .map(g -> extractEntryContent(zip, g.path()))
-//                    .toList();
-//            IntStream.range(0, generators.size())
-//                    .forEach(i -> log.debug("Generator {}: {}", i + 1, generators.get(i)));
-
-            Map<String, ProgramSourceCode> generators = new HashMap<>();
-            for (var generator : metaInfo.generators()) {
-                val name = PathHelper.getFileNameWithoutExtension(generator.path()
-                                                                          .getFileName());
-                val content = extractEntryContent(zip, generator.path());
-                val generatorSourceCode = new ProgramSourceCode(content, generator.language());
-                generators.put(name.toString(), generatorSourceCode);
-            }
+            Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
             log.debug("Generators: {}", generators);
 
             /*
@@ -93,28 +79,10 @@ public class PolygonConverterService {
             Шаг 6: сгенерировать выходные данные для второй группы
             */
             List<TestCaseMetaInfo> needGeneration = new ArrayList<>();
-            List<String> stdinValues = metaInfo.testCases()
-                    .stream()
-                    .<String>mapMulti((testCase, consumer) -> {
-                        try {
-                            String content = extractEntryContent(zip, testCase.stdinSource());
-                            consumer.accept(content);
-                        } catch (PolygonPackageIncomplete e) {
-                            needGeneration.add(testCase);
-                        }
-                    })
-                    .peek(v -> log.debug("Stdin value: {}", v))
-                    .collect(Collectors.toCollection(ArrayList::new));
+            List<String> stdinValues = extractStdinValues(metaInfo, zip, needGeneration);
 
             List<RunSpec> errors = new ArrayList<>();
-            stdinValues.addAll(
-                    needGeneration.stream()
-                            .filter(testCase -> testCase.method() == TestCaseMetaInfo.Method.GENERATED)
-                            .map(TestCaseMetaInfo::generationCommand)
-                            .mapMulti(generateStdin(generators, errors))
-                            .peek(v -> log.debug("Generated value: {}", v))
-                            .toList()
-            );
+            stdinValues.addAll(generateStdinValues(needGeneration, generators, errors));
 
             log.debug("Stdin values: {}", stdinValues.size());
             stdinValues.forEach(log::debug);
@@ -122,6 +90,17 @@ public class PolygonConverterService {
             errors.forEach(log::debug);
         }
         return null;
+    }
+
+    private List<String> generateStdinValues(List<TestCaseMetaInfo> needGeneration,
+                                             Map<String, ProgramSourceCode> generators,
+                                             List<RunSpec> errors) {
+        return needGeneration.stream()
+                .filter(testCase -> testCase.method() == TestCaseMetaInfo.Method.GENERATED)
+                .map(TestCaseMetaInfo::generationCommand)
+                .mapMulti(generateStdin(generators, errors))
+                .peek(v -> log.debug("Generated value: {}", v))
+                .toList();
     }
 
     private BiConsumer<String, Consumer<String>> generateStdin(Map<String, ProgramSourceCode> generators,
@@ -144,6 +123,33 @@ public class PolygonConverterService {
                 errors.add(runSpeck);
             }
         };
+    }
+
+    private List<String> extractStdinValues(TaskMetaInfo metaInfo, ZipFile zip, List<TestCaseMetaInfo> needGeneration) {
+        return metaInfo.testCases()
+                .stream()
+                .<String>mapMulti((testCase, consumer) -> {
+                    try {
+                        String content = extractEntryContent(zip, testCase.stdinSource());
+                        consumer.accept(content);
+                    } catch (PolygonPackageIncomplete e) {
+                        needGeneration.add(testCase);
+                    }
+                })
+                .peek(v -> log.debug("Stdin value: {}", v))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipFile zip) {
+        Map<String, ProgramSourceCode> generators = new HashMap<>();
+        for (var generator : metaInfo.generators()) {
+            val name = PathHelper.getFileNameWithoutExtension(generator.path()
+                                                                      .getFileName());
+            val content = extractEntryContent(zip, generator.path());
+            val generatorSourceCode = new ProgramSourceCode(content, generator.language());
+            generators.put(name, generatorSourceCode);
+        }
+        return generators;
     }
 
     @SneakyThrows
