@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import ru.vsu.ppa.simplecode.configuration.JobeResponses;
 import ru.vsu.ppa.simplecode.model.RunResult;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 
@@ -20,6 +21,7 @@ import ru.vsu.ppa.simplecode.model.RunSpec;
 @Log4j2
 public class JobeInABoxService {
 
+    private final JobeResponses jobeResponses;
     private final RestClient jobeRestClient;
 
     public String submitRun(RunSpec runSpec)
@@ -35,28 +37,40 @@ public class JobeInABoxService {
         if (runResult == null) {
             throw new RuntimeException("Empty response");
         }
-        if (runResult.getOutcome() == 15) {
+        if (runResult.getOutcome() == jobeResponses.ok()) {
             return runResult.getStdout()
                     .stripTrailing();
         }
 
-        if (runResult.getOutcome() == 11) {
+        if (runResult.getOutcome() == jobeResponses.compilationError()) {
             val e = new CompilationError("Ошибка компиляции: " + runResult.getCmpinfo());
             log.debug(e.getMessage());
             throw e;
         }
 
-        val message = switch (runResult.getOutcome()) {
-            case 12 -> "Ошибка выполнения: " + runResult.getStderr();
-            case 13 -> "Превышено время ожидания";
-            case 17 -> "Превышено ограничение по памяти";
-            case 19 -> "Запрещённый системный вызов";
-            case 20 -> "Ошибка сервера";
-            case 21 -> "Сервер перегружен";
-            default -> throw new IllegalStateException("Unexpected value: " + runResult.getOutcome());
-        };
+        String message = getExceptionMessage(runResult);
         log.debug(message);
         throw new RuntimeException(message);
+    }
+
+    private String getExceptionMessage(RunResult runResult) {
+        String message;
+        if (runResult.getOutcome() == jobeResponses.runtimeError()) {
+            message = "Ошибка выполнения: " + runResult.getStderr();
+        } else if (runResult.getOutcome() == jobeResponses.timeLimitExceeded()) {
+            message = "Превышено время ожидания";
+        } else if (runResult.getOutcome() == jobeResponses.memoryLimitExceeded()) {
+            message = "Превышено ограничение по памяти";
+        } else if (runResult.getOutcome() == jobeResponses.illegalSystemCall()) {
+            message = "Запрещённый системный вызов";
+        } else if (runResult.getOutcome() == jobeResponses.internalError()) {
+            message = "Ошибка сервера";
+        } else if (runResult.getOutcome() == jobeResponses.serverOverload()) {
+            message = "Сервер перегружен";
+        } else {
+            throw new IllegalStateException("Unexpected value: " + runResult.getOutcome());
+        }
+        return message;
     }
 
     private void unknownErrorsHandler(

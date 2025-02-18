@@ -332,7 +332,7 @@
             <message key="final.class"
                      value="Private ctor in non-final class. Inspect the code and make sure it's intended."/>
         </module>
-        <module name="HideUtilityClassConstructor"/>
+<!--        <module name="HideUtilityClassConstructor"/>-->
         <module name="SuppressionXpathSingleFilter">
             <property name="checks" value="HideUtilityClassConstructor"/>
             <property name="query" value="//*[MODIFIERS//*[@text = 'UtilityClass' or @text='NoArgsConstructor' or @text = 'Main' or @text = 'Application']]/descendant-or-self::node()"/>

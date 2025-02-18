@@ -1,7 +1,6 @@
 package ru.vsu.ppa.simplecode.configuration;
 
-import java.time.Duration;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Bean;
@@ -13,13 +12,10 @@ import org.springframework.web.client.RestClient;
  * Configuration class for the application.
  */
 @Configuration
+@RequiredArgsConstructor
 public class AppConfiguration {
 
-    @Value("${jobe.client.base-url}")
-    private String jobeBaseUrl;
-
-    @Value("${jobe.client.timeout}")
-    private Duration jobeConnectionTimeout;
+    private final JobeClientProperties jobeClientProperties;
 
     /**
      * Creates a RestClient bean for making HTTP requests to the Jobe API.
@@ -29,7 +25,7 @@ public class AppConfiguration {
     @Bean
     public RestClient jobeRestClient() {
         return RestClient.builder()
-                .baseUrl(jobeBaseUrl)
+                .baseUrl(jobeClientProperties.baseUrl())
                 .requestFactory(customRequestFactory())
                 .build();
     }
@@ -41,8 +37,8 @@ public class AppConfiguration {
      */
     ClientHttpRequestFactory customRequestFactory() {
         ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
-                .withConnectTimeout(jobeConnectionTimeout)
-                .withReadTimeout(jobeConnectionTimeout);
+                .withConnectTimeout(jobeClientProperties.timeout())
+                .withReadTimeout(jobeClientProperties.timeout());
         return ClientHttpRequestFactories.get(settings);
     }
 }

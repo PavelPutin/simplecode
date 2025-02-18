@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
 import org.springframework.stereotype.Service;
+import ru.vsu.ppa.simplecode.configuration.JobeClientProperties;
 import ru.vsu.ppa.simplecode.model.GenerationResponse;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.TaskRun;
@@ -18,6 +19,7 @@ import ru.vsu.ppa.simplecode.model.Testcase;
 @AllArgsConstructor
 public class TestGenerationService {
 
+    private final JobeClientProperties jobeClientProperties;
     private final JobeInABoxService jobeInABoxService;
 
     public GenerationResponse runs(TaskRun runSpec) {
@@ -36,15 +38,15 @@ public class TestGenerationService {
                     if (!stdout.equals(testcase.getExpected())) {
                         String message = "Неправильный ответ%nОжидалось%n%s%nПолучено%n%s%n"
                                 .formatted(testcase.getExpected(), stdout);
-                        errors.add("Тест " + testNumber + ". " + message);
+                        errors.add(getErrorMessage(testNumber, message));
                         log.debug(errors.getLast());
                     }
                 } catch (CompilationError e) {
-                    errors.add("Тест " + testNumber + ". " + e.getMessage());
+                    errors.add(getErrorMessage(testNumber, e.getMessage()));
                     log.debug(errors.getLast());
                     break;
                 } catch (RuntimeException e) {
-                    errors.add("Тест " + testNumber + ". " + e.getMessage());
+                    errors.add(getErrorMessage(testNumber, e.getMessage()));
                     log.debug(errors.getLast());
                 } finally {
                     testNumber++;
@@ -57,7 +59,7 @@ public class TestGenerationService {
                 List<String> history = new ArrayList<>();
                 int errorsInRow = 0;
                 int generatedTestsAmount = Integer.parseInt(runSpec.getGeneratedTestsAmount());
-                for (int i = 0; i < generatedTestsAmount && errorsInRow <= 4; i++) {
+                for (int i = 0; i < generatedTestsAmount && errorsInRow < jobeClientProperties.maxErrorsInRow(); i++) {
                     try {
                         log.debug("History: {}", history.toString());
                         val stdinGenerationRun = new RunSpec(runSpec.getTestGeneratorLanguage(),
@@ -75,15 +77,15 @@ public class TestGenerationService {
                         testcases.add(new Testcase(stdin, expected));
                         errorsInRow = 0;
                     } catch (CompilationError e) {
-                        errors.add("Тест " + testNumber + ". " + e.getMessage());
+                        errors.add(getErrorMessage(testNumber, e.getMessage()));
                         log.debug(errors.getLast());
                         break;
                     } catch (RuntimeException e) {
-                        errors.add("Тест " + testNumber + ". " + e.getMessage());
+                        errors.add(getErrorMessage(testNumber, e.getMessage()));
                         log.debug(errors.getLast());
                         errorsInRow++;
                     } finally {
-                        if (errorsInRow > 4) {
+                        if (errorsInRow >= jobeClientProperties.maxErrorsInRow()) {
                             errors.add("Генерация тестов прервана: 5 ошибок подряд");
                             log.debug(errors.getLast());
                         }
@@ -98,5 +100,9 @@ public class TestGenerationService {
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getErrorMessage(int testNumber, String e) {
+        return "Тест " + testNumber + ". " + e;
     }
 }
