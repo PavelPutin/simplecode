@@ -1,5 +1,21 @@
 package ru.vsu.ppa.simplecode.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -13,22 +29,16 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
-import ru.vsu.ppa.simplecode.model.*;
+import ru.vsu.ppa.simplecode.model.PolygonTestcase;
+import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
+import ru.vsu.ppa.simplecode.model.RunSpec;
+import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
+import ru.vsu.ppa.simplecode.model.Task;
+import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.IntStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 @Service
 @Log4j2
@@ -100,7 +110,7 @@ public class PolygonConverterService {
         try {
             result = extractExpected(testCase, zip);
             log.debug("Extract expected value: {}", result);
-        } catch (PolygonPackageIncomplete e1) {
+        } catch (PolygonPackageIncomplete e) {
             if (testCase.getStdin() != null) {
                 result = generateExpected(testCase, mainSolution, expectedGenerationErrors);
                 log.debug("Generate expected value: {}", result);
@@ -137,7 +147,7 @@ public class PolygonConverterService {
         try {
             result = extractStdin(testCase, zip);
             log.debug("Extract stdin value: {}", result);
-        } catch (PolygonPackageIncomplete e1) {
+        } catch (PolygonPackageIncomplete e) {
             if (testCase.getMetaInfo().method() == TestCaseMetaInfo.Method.GENERATED) {
                 result = generateStdin(testCase, generators, stdinGenerationErrors);
                 log.debug("Generate stdin value: {}", result);
@@ -292,17 +302,17 @@ public class PolygonConverterService {
                         .getNamedItem(problemXmlParsingProperties.executables().pathAttribute()))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                        problemXmlParsingProperties.executables()
-                                                                                                .pathAttribute()));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete
+                        .tagWithAttributeNotFound(nodeXPath,
+                                                  problemXmlParsingProperties.executables().pathAttribute()));
         val language = Optional.of(node)
                 .map(element -> element.getAttributes()
                         .getNamedItem(problemXmlParsingProperties.executables().languageAttribute()))
                 .map(Node::getNodeValue)
                 .map(SourceCodeLanguage::getFromPolygonNotation)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                        problemXmlParsingProperties.executables()
-                                                                                                .languageAttribute()));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete
+                        .tagWithAttributeNotFound(nodeXPath,
+                                                  problemXmlParsingProperties.executables().languageAttribute()));
         return new ExecutableMetaInfo(pathToSource, language);
     }
 
