@@ -148,10 +148,10 @@
         <!-- <module name="CustomImportOrder"/> -->
         <module name="IllegalImport"/> <!-- defaults to sun.* packages -->
         <!-- <module name="ImportControl"/> -->
-        <module name="ImportOrder">
-            <property name="option" value="under"/>
-            <property name="sortStaticImportsAlphabetically" value="true"/>
-        </module>
+<!--        <module name="ImportOrder">-->
+<!--            <property name="option" value="under"/>-->
+<!--            <property name="sortStaticImportsAlphabetically" value="true"/>-->
+<!--        </module>-->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 

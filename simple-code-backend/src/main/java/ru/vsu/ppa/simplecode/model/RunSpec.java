@@ -3,7 +3,6 @@ package ru.vsu.ppa.simplecode.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-
 import java.util.List;
 
 @JsonTypeName("run_spec")
@@ -15,5 +14,5 @@ public record RunSpec(
         Parameters parameters) {
 
     public record Parameters(
-            @JsonProperty("runargs ")List<String> runArguments) {}
+            @JsonProperty("runargs ") List<String> runArguments) {}
 }

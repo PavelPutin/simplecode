@@ -1,8 +1,7 @@
 package ru.vsu.ppa.simplecode.model;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class GenerationResponse {

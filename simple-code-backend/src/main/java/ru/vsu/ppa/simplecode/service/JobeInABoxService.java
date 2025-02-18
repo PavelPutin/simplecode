@@ -1,5 +1,7 @@
 package ru.vsu.ppa.simplecode.service;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -12,9 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ru.vsu.ppa.simplecode.model.RunResult;
 import ru.vsu.ppa.simplecode.model.RunSpec;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 @Service
 @AllArgsConstructor

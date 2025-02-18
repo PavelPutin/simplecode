@@ -1,5 +1,8 @@
 package ru.vsu.ppa.simplecode.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -9,10 +12,6 @@ import ru.vsu.ppa.simplecode.model.GenerationResponse;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.TaskRun;
 import ru.vsu.ppa.simplecode.model.Testcase;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Service
 @Log4j2
@@ -27,18 +26,16 @@ public class TestGenerationService {
             // check answer
             List<String> errors = new ArrayList<>();
             int testNumber = 1;
-            for (var testcase : runSpec.getTask()
-                    .getTestcases()) {
+            for (var testcase : runSpec.getTask().getTestcases()) {
                 try {
                     val runSpeck = new RunSpec(runSpec.getAnswerLanguage(),
-                                               runSpec.getTask()
-                                                       .getAnswer(),
+                                               runSpec.getTask().getAnswer(),
                                                testcase.getStdin(),
                                                null);
                     var stdout = jobeInABoxService.submitRun(runSpeck);
                     if (!stdout.equals(testcase.getExpected())) {
-                        String message = "Неправильный ответ%nОжидалось%n%s%nПолучено%n%s%n".formatted(testcase.getExpected(),
-                                                                                                       stdout);
+                        String message = "Неправильный ответ%nОжидалось%n%s%nПолучено%n%s%n"
+                                .formatted(testcase.getExpected(), stdout);
                         errors.add("Тест " + testNumber + ". " + message);
                         log.debug(errors.getLast());
                     }
@@ -64,17 +61,14 @@ public class TestGenerationService {
                     try {
                         log.debug("History: {}", history.toString());
                         val stdinGenerationRun = new RunSpec(runSpec.getTestGeneratorLanguage(),
-                                                             runSpec.getTask()
-                                                                     .getTestGenerator()
-                                                                     .getCustomCode(),
+                                                             runSpec.getTask().getTestGenerator().getCustomCode(),
                                                              history.toString(),
                                                              null);
                         var stdin = jobeInABoxService.submitRun(stdinGenerationRun);
                         history.add(stdin);
 
                         val expectedGenerationRun = new RunSpec(runSpec.getAnswerLanguage(),
-                                                                runSpec.getTask()
-                                                                        .getAnswer(),
+                                                                runSpec.getTask().getAnswer(),
                                                                 stdin,
                                                                 null);
                         var expected = jobeInABoxService.submitRun(expectedGenerationRun);
