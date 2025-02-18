@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
@@ -26,7 +25,6 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
@@ -36,9 +34,9 @@ import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
 import ru.vsu.ppa.simplecode.model.Task;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
+import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
 
 @Service
 @Log4j2
@@ -69,8 +67,7 @@ public class PolygonConverterService {
             Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
             log.debug("Generators: {}", generators);
 
-            List<PolygonTestcase> testCases = metaInfo.testCases()
-                    .stream()
+            List<PolygonTestcase> testCases = metaInfo.testCases().stream()
                     .map(PolygonTestcase::new)
                     .toList();
 
@@ -122,8 +119,7 @@ public class PolygonConverterService {
     private String generateExpected(PolygonTestcase testCase,
                                     ProgramSourceCode mainSolution,
                                     List<RunSpec> expectedGenerationErrors) {
-        val runSpec = new RunSpec(mainSolution.language()
-                                          .getJobeNotation(),
+        val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
                                   mainSolution.content(),
                                   testCase.getStdin(),
                                   null);
@@ -159,15 +155,15 @@ public class PolygonConverterService {
     private String generateStdin(PolygonTestcase testCase,
                                  Map<String, ProgramSourceCode> generators,
                                  List<RunSpec> stdinGenerationErrors) {
-        val cmd = testCase.getMetaInfo()
-                .generationCommand();
+        val cmd = testCase.getMetaInfo().generationCommand();
         val tokens = cmd.split(" ");
         val generatorName = tokens[0];
         val generator = generators.get(generatorName);
-        List<String> args = Arrays.asList(tokens)
-                .subList(1, tokens.length);
-        val runSpec = new RunSpec(generator.language()
-                                          .getJobeNotation(), generator.content(), null, new RunSpec.Parameters(args));
+        List<String> args = Arrays.asList(tokens).subList(1, tokens.length);
+        val runSpec = new RunSpec(generator.language().getJobeNotation(),
+                                  generator.content(),
+                                  null,
+                                  new RunSpec.Parameters(args));
         try {
             return jobeInABoxService.submitRun(runSpec);
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
@@ -177,16 +173,13 @@ public class PolygonConverterService {
     }
 
     private String extractStdin(PolygonTestcase testCase, ZipFile zip) {
-        return extractEntryContent(zip,
-                                   testCase.getMetaInfo()
-                                           .stdinSource()).trim();
+        return extractEntryContent(zip, testCase.getMetaInfo().stdinSource()).trim();
     }
 
     private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipFile zip) {
         Map<String, ProgramSourceCode> generators = new HashMap<>();
         for (var generator : metaInfo.generators()) {
-            val name = PathHelper.getFileNameWithoutExtension(generator.path()
-                                                                      .getFileName());
+            val name = PathHelper.getFileNameWithoutExtension(generator.path().getFileName());
             val content = extractEntryContent(zip, generator.path());
             val generatorSourceCode = new ProgramSourceCode(content, generator.language());
             generators.put(name, generatorSourceCode);
@@ -215,9 +208,8 @@ public class PolygonConverterService {
      */
     @SneakyThrows(IOException.class)
     private ZipFile multipartResolver(MultipartFile polygonPackage) {
-        val tmpdir = Files.createTempDirectory(null)
-                .toString();
-        val zipPath = Paths.get(tmpdir, polygonPackage.getOriginalFilename());
+        val tempdir = Files.createTempDirectory(null).toString();
+        val zipPath = Paths.get(tempdir, polygonPackage.getOriginalFilename());
         polygonPackage.transferTo(zipPath);
         return new ZipFile(zipPath.toFile());
     }
@@ -229,58 +221,37 @@ public class PolygonConverterService {
             throw new PolygonPackageIncomplete("No problem.xml entry in the zip file");
         }
 
-        val document = getDocument(zip, problemXmlDescription);
+        var docHelper = new XmlNodeHelper(getDocument(zip, problemXmlDescription), xPath);
 
-        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.name().xpath(),
-                                                    document,
-                                                    XPathConstants.NODE);
-        val taskName = Optional.ofNullable(taskNameElement)
-                .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.name().attribute()))
-                .map(Node::getNodeValue)
-                .orElse(problemXmlParsingProperties.name().attribute());
+        val taskName = docHelper.getAttributeValue(problemXmlParsingProperties.name().xpath(),
+                                                   problemXmlParsingProperties.name().attribute())
+                .orElse(problemXmlParsingProperties.name().defaultValue());
 
-        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillis().xpath(),
-                                                             document,
-                                                             XPathConstants.NUMBER);
-        val timeLimitMillis = Optional.of(timeLimitMillisElement)
-                .filter(Double::isFinite)
+        val timeLimitMillis = docHelper.getDouble(problemXmlParsingProperties.timeLimitMillis().xpath())
                 .map(Double::intValue)
                 .orElse(problemXmlParsingProperties.timeLimitMillis().defaultValue());
 
-        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimit().xpath(),
-                                                         document,
-                                                         XPathConstants.NUMBER);
-        val memoryLimit = Optional.of(memoryLimitElement)
-                .filter(Double::isFinite)
+        val memoryLimit = docHelper.getDouble(problemXmlParsingProperties.memoryLimit().xpath())
                 .map(Double::intValue)
                 .map(DataSize::ofBytes)
                 .orElse(problemXmlParsingProperties.memoryLimit().defaultValue());
 
-        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.executables().mainSolution()
-                                                                  .xpath(),
-                                                          document,
-                                                          XPathConstants.NODE);
-        if (solutionSourceElement == null) {
-            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables().mainSolution()
-                                                                  .xpath());
-        }
+        val solutionSourceElement = docHelper.getNode(problemXmlParsingProperties.executables().mainSolution().xpath())
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables()
+                                                                                   .mainSolution()
+                                                                                   .xpath()));
 
         val mainSolution = extractExecutable(solutionSourceElement,
                                              problemXmlParsingProperties.executables().mainSolution().xpath());
 
-        val executables = (NodeList) xPath.evaluate(problemXmlParsingProperties.executables().other().xpath(),
-                                                    document,
-                                                    XPathConstants.NODESET);
+        val executables = docHelper.getNodeList(problemXmlParsingProperties.executables().other().xpath());
 
         List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
                 .mapToObj(executables::item)
                 .map(n -> extractExecutable(n, problemXmlParsingProperties.executables().other().xpath()))
                 .toList();
 
-        val testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSets().xpath(),
-                                                 document,
-                                                 XPathConstants.NODESET);
+        val testSets = docHelper.getNodeList(problemXmlParsingProperties.testSets().xpath());
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
                 .mapToObj(testSets::item)
                 .map(this::extractTestSet)
@@ -296,19 +267,17 @@ public class PolygonConverterService {
                                 testCasesMetaInfo);
     }
 
+    @SneakyThrows
     private ExecutableMetaInfo extractExecutable(Node node, String nodeXPath) {
-        val pathToSource = Optional.of(node)
-                .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.executables().pathAttribute()))
-                .map(Node::getNodeValue)
+        val nodeHelper = new XmlNodeHelper(node, xPath);
+
+        val pathToSource = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().pathAttribute())
                 .map(Paths::get)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete
                         .tagWithAttributeNotFound(nodeXPath,
                                                   problemXmlParsingProperties.executables().pathAttribute()));
-        val language = Optional.of(node)
-                .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.executables().languageAttribute()))
-                .map(Node::getNodeValue)
+
+        val language = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().languageAttribute())
                 .map(SourceCodeLanguage::getFromPolygonNotation)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete
                         .tagWithAttributeNotFound(nodeXPath,
@@ -325,46 +294,36 @@ public class PolygonConverterService {
      */
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        val testSetName = testSet.getAttributes()
-                .getNamedItem(problemXmlParsingProperties.testSets().name().attribute())
-                .getNodeValue();
-        val stdinPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.testSets()
-                                                                                   .stdinPathPattern().xpath(),
-                                                                           testSet,
-                                                                           XPathConstants.STRING))
+        val nodeHelper = new XmlNodeHelper(testSet, xPath);
+        val testSetName = nodeHelper.getAttributeValue(problemXmlParsingProperties.testSets().name().attribute())
+                .orElseThrow();
+        val stdinPathPattern = nodeHelper.getString(problemXmlParsingProperties.testSets()
+                                                            .stdinPathPattern().xpath())
                 .orElse(testSetName + "/%02d");
-        val expectedPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.testSets()
-                                                                                      .expectedPathPattern().xpath(),
-                                                                              testSet,
-                                                                              XPathConstants.STRING))
+        val expectedPathPattern = nodeHelper.getString(problemXmlParsingProperties.testSets()
+                                                               .expectedPathPattern().xpath())
                 .orElse(testSetName + "/%02d.a");
-        val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSets().tests().xpath(),
-                                              testSet,
-                                              XPathConstants.NODESET);
+        val tests = nodeHelper.getNodeList(problemXmlParsingProperties.testSets().tests().xpath());
 
         List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
         for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
-            val test = tests.item(testNumber)
-                    .getAttributes();
+            val testHelper = new XmlNodeHelper(tests.item(testNumber), xPath);
 
             val stdinSource = Paths.get(stdinPathPattern.formatted(testNumber + 1));
             val expectedSource = Paths.get(expectedPathPattern.formatted(testNumber + 1));
 
-            boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests()
-                                                                           .sample().attribute()))
-                    .map(Node::getNodeValue)
+            val sample = testHelper
+                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().sample().attribute())
                     .map(Boolean::parseBoolean)
                     .orElse(false);
 
-            val method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests().method()
-                                                                       .attribute()))
-                    .map(Node::getNodeValue)
+            val method = testHelper
+                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().method().attribute())
                     .map(TestCaseMetaInfo.Method::parse)
                     .orElse(TestCaseMetaInfo.Method.MANUAL);
 
-            val generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests()
-                                                                                  .cmd().attribute()))
-                    .map(Node::getNodeValue)
+            val generationCommand = testHelper
+                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().cmd().attribute())
                     .orElse(null);
 
             testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName,
@@ -389,8 +348,7 @@ public class PolygonConverterService {
      */
     private Document getDocument(ZipFile zip, ZipEntry problemXmlDescription) throws SAXException, IOException {
         val document = xmlDocumentBuilder.parse(zip.getInputStream(problemXmlDescription));
-        document.getDocumentElement()
-                .normalize();
+        document.getDocumentElement().normalize();
         return document;
     }
 
