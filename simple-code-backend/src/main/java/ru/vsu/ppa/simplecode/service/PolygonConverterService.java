@@ -221,52 +221,54 @@ public class PolygonConverterService {
 
         val document = getDocument(zip, problemXmlDescription);
 
-        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.problemNameXPath(),
+        val taskNameElement = (Node) xPath.evaluate(problemXmlParsingProperties.name().xpath(),
                                                     document,
                                                     XPathConstants.NODE);
         val taskName = Optional.ofNullable(taskNameElement)
                 .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.problemNameAttribute()))
+                        .getNamedItem(problemXmlParsingProperties.name().attribute()))
                 .map(Node::getNodeValue)
-                .orElse(problemXmlParsingProperties.problemNameDefault());
+                .orElse(problemXmlParsingProperties.name().attribute());
 
-        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillisXPath(),
+        val timeLimitMillisElement = (Double) xPath.evaluate(problemXmlParsingProperties.timeLimitMillis().xpath(),
                                                              document,
                                                              XPathConstants.NUMBER);
         val timeLimitMillis = Optional.of(timeLimitMillisElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
-                .orElse(problemXmlParsingProperties.timeLimitMillisDefault());
+                .orElse(problemXmlParsingProperties.timeLimitMillis().defaultValue());
 
-        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimitXPath(),
+        val memoryLimitElement = (Double) xPath.evaluate(problemXmlParsingProperties.memoryLimit().xpath(),
                                                          document,
                                                          XPathConstants.NUMBER);
         val memoryLimit = Optional.of(memoryLimitElement)
                 .filter(Double::isFinite)
                 .map(Double::intValue)
                 .map(DataSize::ofBytes)
-                .orElse(problemXmlParsingProperties.memoryLimitDefault());
+                .orElse(problemXmlParsingProperties.memoryLimit().defaultValue());
 
-        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.mainSolutionSourceXPath(),
+        val solutionSourceElement = (Node) xPath.evaluate(problemXmlParsingProperties.executables().mainSolution()
+                                                                  .xpath(),
                                                           document,
                                                           XPathConstants.NODE);
         if (solutionSourceElement == null) {
-            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.mainSolutionSourceXPath());
+            throw PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables().mainSolution()
+                                                                  .xpath());
         }
 
         val mainSolution = extractExecutable(solutionSourceElement,
-                                             problemXmlParsingProperties.mainSolutionSourceXPath());
+                                             problemXmlParsingProperties.executables().mainSolution().xpath());
 
-        val executables = (NodeList) xPath.evaluate(problemXmlParsingProperties.otherExecutableSourcesXPath(),
+        val executables = (NodeList) xPath.evaluate(problemXmlParsingProperties.executables().other().xpath(),
                                                     document,
                                                     XPathConstants.NODESET);
 
         List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
                 .mapToObj(executables::item)
-                .map(n -> extractExecutable(n, problemXmlParsingProperties.otherExecutableSourcesXPath()))
+                .map(n -> extractExecutable(n, problemXmlParsingProperties.executables().other().xpath()))
                 .toList();
 
-        val testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsXpath(),
+        val testSets = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSets().xpath(),
                                                  document,
                                                  XPathConstants.NODESET);
         List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
@@ -287,18 +289,20 @@ public class PolygonConverterService {
     private ExecutableMetaInfo extractExecutable(Node node, String nodeXPath) {
         val pathToSource = Optional.of(node)
                 .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.executablePathAttribute()))
+                        .getNamedItem(problemXmlParsingProperties.executables().pathAttribute()))
                 .map(Node::getNodeValue)
                 .map(Paths::get)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                        problemXmlParsingProperties.executablePathAttribute()));
+                                                                                        problemXmlParsingProperties.executables()
+                                                                                                .pathAttribute()));
         val language = Optional.of(node)
                 .map(element -> element.getAttributes()
-                        .getNamedItem(problemXmlParsingProperties.executableLanguageAttribute()))
+                        .getNamedItem(problemXmlParsingProperties.executables().languageAttribute()))
                 .map(Node::getNodeValue)
                 .map(SourceCodeLanguage::getFromPolygonNotation)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                        problemXmlParsingProperties.executableLanguageAttribute()));
+                                                                                        problemXmlParsingProperties.executables()
+                                                                                                .languageAttribute()));
         return new ExecutableMetaInfo(pathToSource, language);
     }
 
@@ -312,17 +316,19 @@ public class PolygonConverterService {
     @SneakyThrows
     private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
         val testSetName = testSet.getAttributes()
-                .getNamedItem(problemXmlParsingProperties.testSetsNameAttribute())
+                .getNamedItem(problemXmlParsingProperties.testSets().name().attribute())
                 .getNodeValue();
-        val stdinPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.stdinPathPatternXpath(),
+        val stdinPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.testSets()
+                                                                                   .stdinPathPattern().xpath(),
                                                                            testSet,
                                                                            XPathConstants.STRING))
                 .orElse(testSetName + "/%02d");
-        val expectedPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.expectedPathPatternXpath(),
+        val expectedPathPattern = Optional.ofNullable((String) xPath.evaluate(problemXmlParsingProperties.testSets()
+                                                                                      .expectedPathPattern().xpath(),
                                                                               testSet,
                                                                               XPathConstants.STRING))
                 .orElse(testSetName + "/%02d.a");
-        val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSetsTestsXpath(),
+        val tests = (NodeList) xPath.evaluate(problemXmlParsingProperties.testSets().tests().xpath(),
                                               testSet,
                                               XPathConstants.NODESET);
 
@@ -334,17 +340,20 @@ public class PolygonConverterService {
             val stdinSource = Paths.get(stdinPathPattern.formatted(testNumber + 1));
             val expectedSource = Paths.get(expectedPathPattern.formatted(testNumber + 1));
 
-            boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestSampleAttribute()))
+            boolean sample = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests()
+                                                                           .sample().attribute()))
                     .map(Node::getNodeValue)
                     .map(Boolean::parseBoolean)
                     .orElse(false);
 
-            val method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestMethodAttribute()))
+            val method = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests().method()
+                                                                       .attribute()))
                     .map(Node::getNodeValue)
                     .map(TestCaseMetaInfo.Method::parse)
                     .orElse(TestCaseMetaInfo.Method.MANUAL);
 
-            val generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSetsTestCmdAttribute()))
+            val generationCommand = Optional.ofNullable(test.getNamedItem(problemXmlParsingProperties.testSets().tests()
+                                                                                  .cmd().attribute()))
                     .map(Node::getNodeValue)
                     .orElse(null);
 

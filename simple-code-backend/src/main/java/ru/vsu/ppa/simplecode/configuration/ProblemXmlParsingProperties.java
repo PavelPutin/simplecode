@@ -1,49 +1,31 @@
 package ru.vsu.ppa.simplecode.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.unit.DataSize;
 
-@Component
+@ConfigurationProperties("application.polygon.problem")
 public record ProblemXmlParsingProperties(
-        @Value("${application.polygon.problem.name.xpath}")
-        String problemNameXPath,
-        @Value("${application.polygon.problem.name.attribute}")
-        String problemNameAttribute,
-        @Value("${application.polygon.problem.name.default}")
-        String problemNameDefault,
-        @Value("${application.polygon.problem.time-limit-millis.xpath}")
-        String timeLimitMillisXPath,
-        @Value("${application.polygon.problem.time-limit-millis.default}")
-        int timeLimitMillisDefault,
-        @Value("${application.polygon.problem.memory-limit.xpath}")
-        String memoryLimitXPath,
-        @Value("${application.polygon.problem.memory-limit.default}")
-        DataSize memoryLimitDefault,
-        @Value("${application.polygon.problem.executables.main-solution.xpath}")
-        String mainSolutionSourceXPath,
-        @Value("${application.polygon.problem.executables.other.xpath}")
-        String otherExecutableSourcesXPath,
-        @Value("${application.polygon.problem.executables.path-attribute}")
-        String executablePathAttribute,
-        @Value("${application.polygon.problem.executables.language-attribute}")
-        String executableLanguageAttribute,
-        @Value("${application.polygon.problem.test-sets.xpath}")
-        String testSetsXpath,
-        @Value("${application.polygon.problem.test-sets.name.attribute}")
-        String testSetsNameAttribute,
-        @Value("${application.polygon.problem.test-sets.stdin-path-pattern.xpath}")
-        String stdinPathPatternXpath,
-        @Value("${application.polygon.problem.test-sets.expected-path-pattern.xpath}")
-        String expectedPathPatternXpath,
-        @Value("${application.polygon.problem.test-sets.tests.xpath}")
-        String testSetsTestsXpath,
-        @Value("${application.polygon.problem.test-sets.tests.sample.attribute}")
-        String testSetsTestSampleAttribute,
-        @Value("${application.polygon.problem.test-sets.tests.method.attribute}")
-        String testSetsTestMethodAttribute,
-        @Value("${application.polygon.problem.test-sets.tests.cmd.attribute}")
-        String testSetsTestCmdAttribute
-) {
+        XpathAttributeDefaultValue<String> name,
+        XpathDefaultValue<Integer> timeLimitMillis,
+        XpathDefaultValue<DataSize> memoryLimit,
+        Executables executables,
+        TestSets testSets) {
 
+    public record XpathAttributeDefaultValue<T>(String xpath, String attribute, T defaultValue) {}
+
+    public record XpathDefaultValue<T>(String xpath, T defaultValue) {}
+
+    public record Xpath(String xpath) {}
+
+    public record Attribute(String attribute) {}
+
+    public record Executables(Xpath mainSolution, Xpath other, String pathAttribute, String languageAttribute) {}
+
+    public record TestSets(String xpath,
+                           Attribute name,
+                           Xpath stdinPathPattern,
+                           Xpath expectedPathPattern,
+                           Test tests) {}
+
+    public record Test(String xpath, Attribute sample, Attribute method, Attribute cmd) {}
 }

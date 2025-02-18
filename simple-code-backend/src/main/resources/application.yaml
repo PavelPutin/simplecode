@@ -16,13 +16,13 @@ application:
       name:
         xpath: /problem/names/name
         attribute: value
-        default: Unknown
+        default-value: Unknown
       time-limit-millis:
         xpath: /problem/judging/testset/time-limit
-        default: 1000
+        default-value: 1000
       memory-limit:
         xpath: /problem/judging/testset/memory-limit
-        default: 5MB
+        default-value: 5MB
       executables:
         main-solution:
           xpath: /problem/assets/solutions/solution[@tag='main']/source
