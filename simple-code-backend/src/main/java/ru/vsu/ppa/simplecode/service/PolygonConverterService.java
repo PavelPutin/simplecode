@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -47,6 +48,7 @@ public class PolygonConverterService {
     private final XPath xPath;
     private final ProblemXmlParsingProperties problemXmlParsingProperties;
     private final JobeInABoxService jobeInABoxService;
+    private final ObjectMapper jacksonObjectMapper;
 
     /**
      * Converts a polygon package to a programming problem.
@@ -59,6 +61,9 @@ public class PolygonConverterService {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
             val metaInfo = extractTaskMetaInfo(zip);
             log.debug("Task meta info: {}", metaInfo);
+
+            val statement = extractStatement(metaInfo.statementPath(), zip);
+            log.debug("Statement: {}", statement);
 
             val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
                                                      metaInfo.mainSolution.language());
@@ -97,6 +102,13 @@ public class PolygonConverterService {
 
             return null;
         }
+    }
+
+    @SneakyThrows
+    private String extractStatement(Path path, ZipFile zip) {
+        val json = extractEntryContent(zip, path);
+        val statement = jacksonObjectMapper.readValue(json, Statement.class);
+        return statement.legend() + "\nВходные данные\n" + statement.input() + "\nВыходные данные\n" + statement.output();
     }
 
     private String getExpectedValue(PolygonTestcase testCase,
@@ -236,6 +248,12 @@ public class PolygonConverterService {
                 .map(DataSize::ofBytes)
                 .orElse(problemXmlParsingProperties.memoryLimit().defaultValue());
 
+        val statementPath = docHelper.getAttributeValue("/problem/statements/statement[@type='application/x-tex'][@language='russian']", "path")
+                .map(Paths::get)
+                .map(p -> p.resolveSibling("problem-properties.json"))
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(
+                        "/problem/statements/statement[@type='application/x-tex'][@language='russian']", "path"));
+
         val solutionSourceElement = docHelper.getNode(problemXmlParsingProperties.executables().mainSolution().xpath())
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables()
                                                                                    .mainSolution()
@@ -262,6 +280,7 @@ public class PolygonConverterService {
         return new TaskMetaInfo(taskName,
                                 timeLimitMillis,
                                 memoryLimit,
+                                statementPath,
                                 mainSolution,
                                 executablesMetaInfo,
                                 testCasesMetaInfo);
@@ -355,10 +374,12 @@ public class PolygonConverterService {
     private record TaskMetaInfo(String name,
                                 int timeLimit,
                                 DataSize memoryLimit,
+                                Path statementPath,
                                 ExecutableMetaInfo mainSolution,
                                 List<ExecutableMetaInfo> generators,
                                 List<TestCaseMetaInfo> testCases) {}
 
     private record ExecutableMetaInfo(Path path, SourceCodeLanguage language) {}
 
+    private record Statement(String legend, String input, String output) {}
 }
