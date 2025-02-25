@@ -23,6 +23,9 @@ application:
       memory-limit:
         xpath: /problem/judging/testset/memory-limit
         default-value: 5MB
+      statement:
+        xpath: /problem/statements/statement[@type='application/x-tex'][@language='russian']
+        attribute: path
       executables:
         main-solution:
           xpath: /problem/assets/solutions/solution[@tag='main']/source

@@ -108,7 +108,21 @@ public class PolygonConverterService {
     private String extractStatement(Path path, ZipFile zip) {
         val json = extractEntryContent(zip, path);
         val statement = jacksonObjectMapper.readValue(json, Statement.class);
-        return statement.legend() + "\nВходные данные\n" + statement.input() + "\nВыходные данные\n" + statement.output();
+        return statement.legend() + "\nВходные данные\n" + statement.input() + "\nВыходные данные\n"
+                + statement.output();
+    }
+
+    @SneakyThrows
+    private String extractEntryContent(ZipFile zip, Path pathToEntry) {
+        String fixedPath = PathHelper.toUnixString(pathToEntry);
+        val extractingEntry = zip.getEntry(fixedPath);
+        if (extractingEntry == null) {
+            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
+        }
+        try (val is = zip.getInputStream(extractingEntry)) {
+            // TODO: fix big files problem
+            return new String(is.readAllBytes());
+        }
     }
 
     private String getExpectedValue(PolygonTestcase testCase,
@@ -199,19 +213,6 @@ public class PolygonConverterService {
         return generators;
     }
 
-    @SneakyThrows
-    private String extractEntryContent(ZipFile zip, Path pathToEntry) {
-        String fixedPath = PathHelper.toUnixString(pathToEntry);
-        val extractingEntry = zip.getEntry(fixedPath);
-        if (extractingEntry == null) {
-            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
-        }
-        try (val is = zip.getInputStream(extractingEntry)) {
-            // TODO: fix big files problem
-            return new String(is.readAllBytes());
-        }
-    }
-
     /**
      * Resolves a multipart file into a zip file.
      *
@@ -248,11 +249,16 @@ public class PolygonConverterService {
                 .map(DataSize::ofBytes)
                 .orElse(problemXmlParsingProperties.memoryLimit().defaultValue());
 
-        val statementPath = docHelper.getAttributeValue("/problem/statements/statement[@type='application/x-tex'][@language='russian']", "path")
+        val statementPath = docHelper.getAttributeValue(problemXmlParsingProperties.statement().xpath(),
+                                                        problemXmlParsingProperties.statement().attribute())
                 .map(Paths::get)
                 .map(p -> p.resolveSibling("problem-properties.json"))
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(
-                        "/problem/statements/statement[@type='application/x-tex'][@language='russian']", "path"));
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties
+                                                                                                .statement()
+                                                                                                .xpath(),
+                                                                                        problemXmlParsingProperties
+                                                                                                .statement()
+                                                                                                .attribute()));
 
         val solutionSourceElement = docHelper.getNode(problemXmlParsingProperties.executables().mainSolution().xpath())
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables()
