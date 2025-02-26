@@ -29,10 +29,11 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
+import ru.vsu.ppa.simplecode.model.PolygonToCodeRunnerConversionResult;
 import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
+import ru.vsu.ppa.simplecode.model.ProgramingProblem;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
-import ru.vsu.ppa.simplecode.model.Task;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
 import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
@@ -57,51 +58,65 @@ public class PolygonConverterService {
      * @return the converted programming problem
      */
     @SneakyThrows(IOException.class)
-    public Task convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
+    public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
             val metaInfo = extractTaskMetaInfo(zip);
             log.debug("Task meta info: {}", metaInfo);
 
-            val statement = extractStatement(metaInfo.statementPath(), zip);
-            log.debug("Statement: {}", statement);
-
-            val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
-                                                     metaInfo.mainSolution.language());
-            log.debug("Main solution: {}", mainSolution);
-
-            Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
-            log.debug("Generators: {}", generators);
-
-            List<PolygonTestcase> testCases = metaInfo.testCases().stream()
-                    .map(PolygonTestcase::new)
-                    .toList();
-
-            List<RunSpec> stdinGenerationErrors = new ArrayList<>();
-            List<RunSpec> expectedGenerationErrors = new ArrayList<>();
-
-            testCases.forEach(testCase -> {
-                log.debug("Test case: {}/{}",
-                          testCase.getMetaInfo().testSetName(),
-                          testCase.getMetaInfo().number() + 1);
-
-                String stdin = getStdinValue(testCase, zip, generators, stdinGenerationErrors);
-                testCase.setStdin(stdin);
-
-                String expected = getExpectedValue(testCase, zip, mainSolution, expectedGenerationErrors);
-                testCase.setExpected(expected);
-            });
-
-            log.debug("Test cases ({}):", testCases.size());
-            testCases.forEach(testCase -> log.debug("Test case: {}", testCase));
-
-            log.debug("Stdin generation errors ({}):", stdinGenerationErrors.size());
-            stdinGenerationErrors.forEach(log::debug);
-
-            log.debug("Expected generation errors ({}):", expectedGenerationErrors.size());
-            expectedGenerationErrors.forEach(log::debug);
-
-            return null;
+            return getPolygonToCodeRunnerConversionResult(metaInfo, zip);
         }
+    }
+
+    private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(TaskMetaInfo metaInfo,
+                                                                                       ZipFile zip) {
+        val statement = extractStatement(metaInfo.statementPath(), zip);
+        log.debug("Statement: {}", statement);
+
+        val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
+                                                 metaInfo.mainSolution.language());
+        log.debug("Main solution: {}", mainSolution);
+
+        Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
+        log.debug("Generators: {}", generators);
+
+        List<PolygonTestcase> testCases = metaInfo.testCases().stream()
+                .map(PolygonTestcase::new)
+                .toList();
+
+        List<RunSpec> stdinGenerationErrors = new ArrayList<>();
+        List<RunSpec> expectedGenerationErrors = new ArrayList<>();
+
+        testCases.forEach(testCase -> {
+            log.debug("Test case: {}/{}",
+                      testCase.getMetaInfo().testSetName(),
+                      testCase.getMetaInfo().number() + 1);
+
+            String stdin = getStdinValue(testCase, zip, generators, stdinGenerationErrors);
+            testCase.setStdin(stdin);
+
+            String expected = getExpectedValue(testCase, zip, mainSolution, expectedGenerationErrors);
+            testCase.setExpected(expected);
+        });
+
+        log.debug("Test cases ({}):", testCases.size());
+        testCases.forEach(testCase -> log.debug("Test case: {}", testCase));
+
+        log.debug("Stdin generation errors ({}):", stdinGenerationErrors.size());
+        stdinGenerationErrors.forEach(log::debug);
+
+        log.debug("Expected generation errors ({}):", expectedGenerationErrors.size());
+        expectedGenerationErrors.forEach(log::debug);
+
+        val problem = new ProgramingProblem(
+                metaInfo.name(),
+                metaInfo.timeLimit(),
+                metaInfo.memoryLimit().toMegabytes(),
+                statement,
+                mainSolution,
+                generators,
+                testCases
+        );
+        return new PolygonToCodeRunnerConversionResult(problem, stdinGenerationErrors, expectedGenerationErrors);
     }
 
     @SneakyThrows

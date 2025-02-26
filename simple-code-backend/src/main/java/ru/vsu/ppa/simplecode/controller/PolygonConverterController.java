@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import ru.vsu.ppa.simplecode.model.Task;
+import ru.vsu.ppa.simplecode.model.PolygonToCodeRunnerConversionResult;
 import ru.vsu.ppa.simplecode.service.PolygonConverterService;
 
 @RestController()
@@ -19,7 +19,7 @@ public class PolygonConverterController {
     private final PolygonConverterService polygonConverterService;
 
     @PostMapping()
-    public ResponseEntity<Task> convertPolygonPackageToProgrammingProblem(
+    public ResponseEntity<PolygonToCodeRunnerConversionResult> convertPolygonPackageToProgrammingProblem(
             @RequestParam("package") MultipartFile polygonPackage) {
         val task = polygonConverterService.convertPolygonPackageToProgrammingProblem(polygonPackage);
         return ResponseEntity.ok(task);
