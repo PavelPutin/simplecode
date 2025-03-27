@@ -7,11 +7,15 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -34,6 +38,7 @@ import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
 import ru.vsu.ppa.simplecode.model.ProgramingProblem;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
+import ru.vsu.ppa.simplecode.model.StatementFile;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
 import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
@@ -71,6 +76,9 @@ public class PolygonConverterService {
                                                                                        ZipFile zip) {
         val statement = extractStatement(metaInfo.statementPath(), zip);
         log.debug("Statement: {}", statement);
+
+        List<StatementFile> images = extractImages(metaInfo.statementPath(), zip, statement);
+        log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
 
         val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
                                                  metaInfo.mainSolution.language());
@@ -112,6 +120,7 @@ public class PolygonConverterService {
                 metaInfo.timeLimit(),
                 metaInfo.memoryLimit().toMegabytes(),
                 statement,
+                images,
                 mainSolution,
                 generators,
                 testCases
@@ -121,10 +130,24 @@ public class PolygonConverterService {
 
     @SneakyThrows
     private String extractStatement(Path path, ZipFile zip) {
-        val json = extractEntryContent(zip, path);
+        val json = extractEntryContent(zip, path.resolve("problem-properties.json"));
         val statement = jacksonObjectMapper.readValue(json, Statement.class);
-        return statement.legend() + "\nВходные данные\n" + statement.input() + "\nВыходные данные\n"
-                + statement.output() + "\nПримечания\n" + statement.notes();
+
+        return statement.legend() + "\n<h3>Входные данные</h3>\n" + statement.input() + "\n<h3>Выходные данные</h3>\n"
+                + statement.output() + "\n<h3>Примечания</h3>\n" + statement.notes();
+    }
+
+    private List<StatementFile> extractImages(Path path, ZipFile zip, String text) {
+        Pattern includeGraphics = Pattern.compile("\\\\includegraphics.*\\{(.*)}");
+        Matcher graphics = includeGraphics.matcher(text);
+        return graphics.results()
+                .map(r -> r.group(1))
+                .map(name -> {
+                    byte[] data = extractEntryContentAsBytes(zip, path.resolve(name));
+                    data = Base64.getEncoder().encode(data);
+                    return new StatementFile(name, "/", "base64", data);
+                })
+                .toList();
     }
 
     @SneakyThrows
@@ -137,6 +160,19 @@ public class PolygonConverterService {
         try (val is = zip.getInputStream(extractingEntry)) {
             // TODO: fix big files problem
             return new String(is.readAllBytes());
+        }
+    }
+
+    @SneakyThrows
+    private byte[] extractEntryContentAsBytes(ZipFile zip, Path pathToEntry) {
+        String fixedPath = PathHelper.toUnixString(pathToEntry);
+        val extractingEntry = zip.getEntry(fixedPath);
+        if (extractingEntry == null) {
+            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
+        }
+        try (val is = zip.getInputStream(extractingEntry)) {
+            // TODO: fix big files problem
+            return is.readAllBytes();
         }
     }
 
@@ -267,7 +303,7 @@ public class PolygonConverterService {
         val statementPath = docHelper.getAttributeValue(problemXmlParsingProperties.statement().xpath(),
                                                         problemXmlParsingProperties.statement().attribute())
                 .map(Paths::get)
-                .map(p -> p.resolveSibling("problem-properties.json"))
+                .map(Path::getParent)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties
                                                                                                 .statement()
                                                                                                 .xpath(),

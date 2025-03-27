@@ -7,6 +7,7 @@ public record ProgramingProblem(String name,
                                 int timeLimitMillis,
                                 long memoryLimitMB,
                                 String statement,
+                                List<StatementFile> images,
                                 ProgramSourceCode mainSolution,
                                 Map<String, ProgramSourceCode> generators,
                                 List<PolygonTestcase> testCases) {}
