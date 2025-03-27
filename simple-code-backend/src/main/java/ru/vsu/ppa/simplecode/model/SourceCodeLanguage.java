@@ -2,12 +2,16 @@ package ru.vsu.ppa.simplecode.model;
 
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
 import static java.util.Collections.singletonList;
 
 /**
  * Перечисление, представляющее языки исходного кода.
  */
+@Getter
+@Log4j2
 public enum SourceCodeLanguage {
 
     /**
@@ -18,7 +22,7 @@ public enum SourceCodeLanguage {
     /**
      * Язык C++.
      */
-    CPP(singletonList("cpp.gcc13-64-winlibs-g++20"), "cpp"),
+    CPP(List.of("cpp.g++14", "cpp.g++17", "cpp.gcc13-64-winlibs-g++20", "cpp.gcc14-64-msys2-g++23"), "cpp"),
 
     /**
      * Язык Java.
@@ -37,13 +41,23 @@ public enum SourceCodeLanguage {
 
     /**
      * Список обозначений языка в системе Polygon.
+     * -- GETTER --
+     *  Возвращает список обозначений языка в системе Polygon.
+     *
+     * @return список обозначений языка в системе Polygon
+
      */
-    private List<String> polygonNotation;
+    private final List<String> polygonNotation;
 
     /**
      * Обозначение языка в системе Jobe.
+     * -- GETTER --
+     *  Возвращает обозначение языка в системе Jobe.
+     *
+     * @return обозначение языка в системе Jobe
+
      */
-    private String jobeNotation;
+    private final String jobeNotation;
 
     /**
      * Конструктор перечисления SourceCodeLanguage.
@@ -64,6 +78,7 @@ public enum SourceCodeLanguage {
      * @throws IllegalArgumentException если язык не поддерживается
      */
     public static SourceCodeLanguage getFromPolygonNotation(String polygonNotation) {
+        log.debug(polygonNotation);
         return Arrays.stream(SourceCodeLanguage.values())
                 .filter(language -> language.getPolygonNotation()
                         .contains(polygonNotation))
@@ -71,22 +86,5 @@ public enum SourceCodeLanguage {
                 .orElseThrow(() -> new IllegalArgumentException("Not supported language"));
     }
 
-    /**
-     * Возвращает список обозначений языка в системе Polygon.
-     *
-     * @return список обозначений языка в системе Polygon
-     */
-    public List<String> getPolygonNotation() {
-        return polygonNotation;
-    }
-
-    /**
-     * Возвращает обозначение языка в системе Jobe.
-     *
-     * @return обозначение языка в системе Jobe
-     */
-    public String getJobeNotation() {
-        return jobeNotation;
-    }
 }
 
