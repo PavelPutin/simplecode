@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +40,9 @@ import ru.vsu.ppa.simplecode.model.StatementFile;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
 import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
+import ru.vsu.ppa.simplecode.util.ZipEntryByteArrayContentExtractor;
+import ru.vsu.ppa.simplecode.util.ZipEntryContentExtractor;
+import ru.vsu.ppa.simplecode.util.ZipEntryStringContentExtractor;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
 
@@ -74,17 +75,20 @@ public class PolygonConverterService {
 
     private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(TaskMetaInfo metaInfo,
                                                                                        ZipFile zip) {
-        val statement = extractStatement(metaInfo.statementPath(), zip);
+        val stringExtractor = new ZipEntryStringContentExtractor(zip);
+        val byteExtractor = new ZipEntryByteArrayContentExtractor(zip);
+
+        val statement = extractStatement(metaInfo.statementPath(), stringExtractor);
         log.debug("Statement: {}", statement);
 
-        List<StatementFile> images = extractImages(metaInfo.statementPath(), zip, statement);
+        List<StatementFile> images = extractImages(metaInfo.statementPath(), byteExtractor, statement);
         log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
 
-        val mainSolution = new ProgramSourceCode(extractEntryContent(zip, metaInfo.mainSolution.path()),
+        val mainSolution = new ProgramSourceCode(stringExtractor.extract(metaInfo.mainSolution.path()),
                                                  metaInfo.mainSolution.language());
         log.debug("Main solution: {}", mainSolution);
 
-        Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, zip);
+        Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, stringExtractor);
         log.debug("Generators: {}", generators);
 
         List<PolygonTestcase> testCases = metaInfo.testCases().stream()
@@ -99,10 +103,10 @@ public class PolygonConverterService {
                       testCase.getMetaInfo().testSetName(),
                       testCase.getMetaInfo().number() + 1);
 
-            String stdin = getStdinValue(testCase, zip, generators, stdinGenerationErrors);
+            String stdin = getStdinValue(testCase, stringExtractor, generators, stdinGenerationErrors);
             testCase.setStdin(stdin);
 
-            String expected = getExpectedValue(testCase, zip, mainSolution, expectedGenerationErrors);
+            String expected = getExpectedValue(testCase, stringExtractor, mainSolution, expectedGenerationErrors);
             testCase.setExpected(expected);
         });
 
@@ -129,60 +133,34 @@ public class PolygonConverterService {
     }
 
     @SneakyThrows
-    private String extractStatement(Path path, ZipFile zip) {
-        val json = extractEntryContent(zip, path.resolve("problem-properties.json"));
+    private String extractStatement(Path path, ZipEntryContentExtractor<String> extractor) {
+        val json = extractor.extract(path.resolve("problem-properties.json"));
         val statement = jacksonObjectMapper.readValue(json, Statement.class);
 
         return statement.legend() + "\n<h3>Входные данные</h3>\n" + statement.input() + "\n<h3>Выходные данные</h3>\n"
                 + statement.output() + "\n<h3>Примечания</h3>\n" + statement.notes();
     }
 
-    private List<StatementFile> extractImages(Path path, ZipFile zip, String text) {
+    private List<StatementFile> extractImages(Path path, ZipEntryContentExtractor<byte[]> extractor, String text) {
         Pattern includeGraphics = Pattern.compile("\\\\includegraphics.*\\{(.*)}");
         Matcher graphics = includeGraphics.matcher(text);
         return graphics.results()
                 .map(r -> r.group(1))
                 .map(name -> {
-                    byte[] data = extractEntryContentAsBytes(zip, path.resolve(name));
+                    byte[] data = extractor.extract(path.resolve(name));
                     data = Base64.getEncoder().encode(data);
                     return new StatementFile(name, "/", "base64", data);
                 })
                 .toList();
     }
 
-    @SneakyThrows
-    private String extractEntryContent(ZipFile zip, Path pathToEntry) {
-        String fixedPath = PathHelper.toUnixString(pathToEntry);
-        val extractingEntry = zip.getEntry(fixedPath);
-        if (extractingEntry == null) {
-            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
-        }
-        try (val is = zip.getInputStream(extractingEntry)) {
-            // TODO: fix big files problem
-            return new String(is.readAllBytes());
-        }
-    }
-
-    @SneakyThrows
-    private byte[] extractEntryContentAsBytes(ZipFile zip, Path pathToEntry) {
-        String fixedPath = PathHelper.toUnixString(pathToEntry);
-        val extractingEntry = zip.getEntry(fixedPath);
-        if (extractingEntry == null) {
-            throw new PolygonPackageIncomplete(MessageFormat.format("No entry {0} in the zip file", fixedPath));
-        }
-        try (val is = zip.getInputStream(extractingEntry)) {
-            // TODO: fix big files problem
-            return is.readAllBytes();
-        }
-    }
-
     private String getExpectedValue(PolygonTestcase testCase,
-                                    ZipFile zip,
+                                    ZipEntryContentExtractor<String> extractor,
                                     ProgramSourceCode mainSolution,
                                     List<RunSpec> expectedGenerationErrors) {
         String result = null;
         try {
-            result = extractExpected(testCase, zip);
+            result = extractExpected(testCase, extractor);
             log.debug("Extract expected value: {}", result);
         } catch (PolygonPackageIncomplete e) {
             if (testCase.getStdin() != null) {
@@ -208,17 +186,17 @@ public class PolygonConverterService {
         return null;
     }
 
-    private String extractExpected(PolygonTestcase testCase, ZipFile zip) {
-        return extractEntryContent(zip, testCase.getMetaInfo().expectedSource()).trim();
+    private String extractExpected(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
+        return extractor.extract(testCase.getMetaInfo().expectedSource()).trim();
     }
 
     private String getStdinValue(PolygonTestcase testCase,
-                                 ZipFile zip,
+                                 ZipEntryContentExtractor<String> extractor,
                                  Map<String, ProgramSourceCode> generators,
                                  List<RunSpec> stdinGenerationErrors) {
         String result = null;
         try {
-            result = extractStdin(testCase, zip);
+            result = extractStdin(testCase, extractor);
             log.debug("Extract stdin value: {}", result);
         } catch (PolygonPackageIncomplete e) {
             if (testCase.getMetaInfo().method() == TestCaseMetaInfo.Method.GENERATED) {
@@ -249,15 +227,15 @@ public class PolygonConverterService {
         return null;
     }
 
-    private String extractStdin(PolygonTestcase testCase, ZipFile zip) {
-        return extractEntryContent(zip, testCase.getMetaInfo().stdinSource()).trim();
+    private String extractStdin(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
+        return extractor.extract(testCase.getMetaInfo().stdinSource()).trim();
     }
 
-    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipFile zip) {
+    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipEntryContentExtractor<String> extractor) {
         Map<String, ProgramSourceCode> generators = new HashMap<>();
         for (var generator : metaInfo.generators()) {
             val name = PathHelper.getFileNameWithoutExtension(generator.path().getFileName());
-            val content = extractEntryContent(zip, generator.path());
+            val content = extractor.extract(generator.path());
             val generatorSourceCode = new ProgramSourceCode(content, generator.language());
             generators.put(name, generatorSourceCode);
         }
