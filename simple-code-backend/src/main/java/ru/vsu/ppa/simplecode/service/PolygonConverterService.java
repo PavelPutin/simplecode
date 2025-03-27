@@ -124,7 +124,7 @@ public class PolygonConverterService {
         val json = extractEntryContent(zip, path);
         val statement = jacksonObjectMapper.readValue(json, Statement.class);
         return statement.legend() + "\nВходные данные\n" + statement.input() + "\nВыходные данные\n"
-                + statement.output();
+                + statement.output() + "\nПримечания\n" + statement.notes();
     }
 
     @SneakyThrows
@@ -402,5 +402,5 @@ public class PolygonConverterService {
 
     private record ExecutableMetaInfo(Path path, SourceCodeLanguage language) {}
 
-    private record Statement(String legend, String input, String output) {}
+    private record Statement(String legend, String input, String output, String notes) {}
 }
