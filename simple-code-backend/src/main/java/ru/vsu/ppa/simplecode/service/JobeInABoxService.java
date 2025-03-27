@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import ru.vsu.ppa.simplecode.configuration.JobeResponses;
 import ru.vsu.ppa.simplecode.model.RunResult;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 
@@ -21,71 +20,62 @@ import ru.vsu.ppa.simplecode.model.RunSpec;
 @Log4j2
 public class JobeInABoxService {
 
-    private final JobeResponses jobeResponses;
     private final RestClient jobeRestClient;
 
-    public String submitRun(RunSpec runSpec)
-            throws ExecutionException, InterruptedException, JsonProcessingException {
-        val runResult = jobeRestClient.post()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(runSpec)
-                .retrieve()
+    /**
+     * Submits a run specification to the Jobe REST client and returns the standard output of the run.
+     *
+     * @param runSpec the run specification to submit
+     * @return the standard output of the run
+     * @throws ExecutionException      if an error occurs during execution
+     * @throws InterruptedException    if the thread is interrupted
+     * @throws JsonProcessingException if an error occurs during JSON processing
+     */
+    public String submitRun(RunSpec runSpec) throws ExecutionException, InterruptedException, JsonProcessingException {
+        val runResult = jobeRestClient.post().contentType(MediaType.APPLICATION_JSON).body(runSpec).retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
-                .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler)
-                .body(RunResult.class);
+                .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler).body(RunResult.class);
 
         if (runResult == null) {
             throw new RuntimeException("Empty response");
         }
-        if (runResult.getOutcome() == jobeResponses.ok()) {
-            return runResult.getStdout()
-                    .stripTrailing();
+
+        val jobeResponse = JobeResponses.fromCode(runResult.getOutcome());
+        if (jobeResponse.equals(JobeResponses.OK)) {
+            return runResult.getStdout().stripTrailing();
         }
 
-        if (runResult.getOutcome() == jobeResponses.compilationError()) {
+        if (jobeResponse.equals(JobeResponses.COMPILATION_ERROR)) {
             val e = new CompilationError("Ошибка компиляции: " + runResult.getCmpinfo());
             log.debug(e.getMessage());
             throw e;
         }
 
-        String message = getExceptionMessage(runResult);
+        String message = getExceptionMessage(runResult, jobeResponse);
         log.debug(message);
         throw new RuntimeException(message);
     }
 
-    private String getExceptionMessage(RunResult runResult) {
-        String message;
-        if (runResult.getOutcome() == jobeResponses.runtimeError()) {
-            message = "Ошибка выполнения: " + runResult.getStderr();
-        } else if (runResult.getOutcome() == jobeResponses.timeLimitExceeded()) {
-            message = "Превышено время ожидания";
-        } else if (runResult.getOutcome() == jobeResponses.memoryLimitExceeded()) {
-            message = "Превышено ограничение по памяти";
-        } else if (runResult.getOutcome() == jobeResponses.illegalSystemCall()) {
-            message = "Запрещённый системный вызов";
-        } else if (runResult.getOutcome() == jobeResponses.internalError()) {
-            message = "Ошибка сервера";
-        } else if (runResult.getOutcome() == jobeResponses.serverOverload()) {
-            message = "Сервер перегружен";
-        } else {
-            throw new IllegalStateException("Unexpected value: " + runResult.getOutcome());
-        }
-        return message;
+    private String getExceptionMessage(RunResult runResult, JobeResponses jobeResponse) {
+        return switch (jobeResponse) {
+            case RUNTIME_ERROR -> "Ошибка выполнения: " + runResult.getStderr();
+            case TIME_LIMIT_EXCEEDED -> "Превышено время ожидания";
+            case MEMORY_LIMIT_EXCEEDED -> "Превышено ограничение по памяти";
+            case ILLEGAL_SYSTEM_CALL -> "Запрещённый системный вызов";
+            case INTERNAL_ERROR -> "Ошибка сервера";
+            case SERVER_OVERLOAD -> "Сервер перегружен";
+            default -> throw new IllegalStateException("Unexpected value: " + jobeResponse);
+        };
     }
 
-    private void unknownErrorsHandler(
-            HttpRequest request,
-            ClientHttpResponse response) throws IOException {
+    private void unknownErrorsHandler(HttpRequest request, ClientHttpResponse response) throws IOException {
         val message = "Ошибка сервера: неизвестный http статус ответа: " + response.getStatusCode();
         log.debug(message);
         throw new RuntimeException(message);
     }
 
-    private void clientErrorsHandler(
-            HttpRequest request,
-            ClientHttpResponse response) throws IOException {
-        val message = new String(response.getBody()
-                                         .readAllBytes());
+    private void clientErrorsHandler(HttpRequest request, ClientHttpResponse response) throws IOException {
+        val message = new String(response.getBody().readAllBytes());
         log.debug("Error {}", message);
         throw new RuntimeException(message);
     }

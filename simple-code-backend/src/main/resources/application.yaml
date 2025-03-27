@@ -55,12 +55,3 @@ jobe:
     timeout: 10s
     base-url: http://localhost:8081/jobe/index.php/restapi/runs
     max-errors-in-row: 5
-  responses:
-    compilation-error: 11
-    runtime-error: 12
-    time-limit-exceeded: 13
-    ok: 15
-    memory-limit-exceeded: 17
-    illegal-system-call: 19
-    internal-error: 20
-    server-overload: 21
