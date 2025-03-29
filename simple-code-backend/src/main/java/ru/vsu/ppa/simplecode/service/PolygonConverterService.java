@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,6 +41,7 @@ import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
 import ru.vsu.ppa.simplecode.model.StatementFile;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PathHelper;
+import ru.vsu.ppa.simplecode.util.TexToHtmlConverter;
 import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
 import ru.vsu.ppa.simplecode.util.ZipEntryByteArrayContentExtractor;
 import ru.vsu.ppa.simplecode.util.ZipEntryContentExtractor;
@@ -81,7 +84,7 @@ public class PolygonConverterService {
         val statement = extractStatement(metaInfo.statementPath(), stringExtractor);
         log.debug("Statement: {}", statement);
 
-        List<StatementFile> images = extractImages(metaInfo.statementPath(), byteExtractor, statement);
+        List<StatementFile> images = extractImagesFromStatement(metaInfo.statementPath(), byteExtractor, statement);
         log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
 
         val mainSolution = new ProgramSourceCode(stringExtractor.extract(metaInfo.mainSolution.path()),
@@ -123,25 +126,35 @@ public class PolygonConverterService {
                 metaInfo.name(),
                 metaInfo.timeLimit(),
                 metaInfo.memoryLimit().toMegabytes(),
-                statement,
+                statement.getAsHtml(),
                 images,
                 mainSolution,
                 generators,
                 testCases
         );
+        log.debug("Problem statement HTML: {}", problem.statement());
         return new PolygonToCodeRunnerConversionResult(problem, stdinGenerationErrors, expectedGenerationErrors);
     }
 
     @SneakyThrows
-    private String extractStatement(Path path, ZipEntryContentExtractor<String> extractor) {
+    private Statement extractStatement(Path path, ZipEntryContentExtractor<String> extractor) {
         val json = extractor.extract(path.resolve("problem-properties.json"));
-        val statement = jacksonObjectMapper.readValue(json, Statement.class);
+        return jacksonObjectMapper.readValue(json, Statement.class);
+    }
 
-        return statement.legend() + "\n<h3>Входные данные</h3>\n" + statement.input() + "\n<h3>Выходные данные</h3>\n"
-                + statement.output() + "\n<h3>Примечания</h3>\n" + statement.notes();
+    private List<StatementFile> extractImagesFromStatement(Path path,
+                                                           ZipEntryContentExtractor<byte[]> extractor,
+                                                           Statement statement) {
+        return Stream.of(statement.legend(), statement.input(), statement.output(), statement.notes())
+                .map(t -> extractImages(path, extractor, t))
+                .flatMap(List::stream)
+                .toList();
     }
 
     private List<StatementFile> extractImages(Path path, ZipEntryContentExtractor<byte[]> extractor, String text) {
+        if (text == null) {
+            return Collections.emptyList();
+        }
         Pattern includeGraphics = Pattern.compile("\\\\includegraphics.*\\{(.*)}");
         Matcher graphics = includeGraphics.matcher(text);
         return graphics.results()
@@ -231,7 +244,8 @@ public class PolygonConverterService {
         return extractor.extract(testCase.getMetaInfo().stdinSource()).trim();
     }
 
-    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo, ZipEntryContentExtractor<String> extractor) {
+    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo,
+                                                             ZipEntryContentExtractor<String> extractor) {
         Map<String, ProgramSourceCode> generators = new HashMap<>();
         for (var generator : metaInfo.generators()) {
             val name = PathHelper.getFileNameWithoutExtension(generator.path().getFileName());
@@ -416,5 +430,15 @@ public class PolygonConverterService {
 
     private record ExecutableMetaInfo(Path path, SourceCodeLanguage language) {}
 
-    private record Statement(String legend, String input, String output, String notes) {}
+    private record Statement(String legend, String input, String output, String notes) {
+
+        private String getAsHtml() {
+            val legend = TexToHtmlConverter.convert(this.legend);
+            val input = TexToHtmlConverter.convert(this.input);
+            val output = TexToHtmlConverter.convert(this.output);
+            val notes = TexToHtmlConverter.convert(this.notes);
+            return legend + "<h3>Входные данные</h3>" + input + "<h3>Выходные данные</h3>"
+                    + output + "<h3>Примечания</h3>" + notes;
+        }
+    }
 }
