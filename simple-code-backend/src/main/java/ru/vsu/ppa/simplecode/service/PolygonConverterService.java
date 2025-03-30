@@ -106,11 +106,21 @@ public class PolygonConverterService {
                       testCase.getMetaInfo().testSetName(),
                       testCase.getMetaInfo().number() + 1);
 
-            String stdin = getStdinValue(testCase, stringExtractor, generators, stdinGenerationErrors);
-            testCase.setStdin(stdin);
+            try {
+                String stdin = getStdinValue(testCase, stringExtractor, generators);
+                testCase.setStdin(stdin);
+            } catch (TestCaseGenerationException e) {
+                stdinGenerationErrors.add(e.getRunSpec());
+                testCase.setExpected(null);
+            }
 
-            String expected = getExpectedValue(testCase, stringExtractor, mainSolution, expectedGenerationErrors);
-            testCase.setExpected(expected);
+            try {
+                String expected = getExpectedValue(testCase, stringExtractor, mainSolution);
+                testCase.setExpected(expected);
+            } catch (TestCaseGenerationException e) {
+                expectedGenerationErrors.add(e.getRunSpec());
+                testCase.setExpected(null);
+            }
         });
 
         log.debug("Test cases ({}):", testCases.size());
@@ -169,24 +179,21 @@ public class PolygonConverterService {
 
     private String getExpectedValue(PolygonTestcase testCase,
                                     ZipEntryContentExtractor<String> extractor,
-                                    ProgramSourceCode mainSolution,
-                                    List<RunSpec> expectedGenerationErrors) {
+                                    ProgramSourceCode mainSolution) {
         String result = null;
         try {
             result = extractExpected(testCase, extractor);
             log.debug("Extract expected value: {}", result);
         } catch (PolygonPackageIncomplete e) {
             if (testCase.getStdin() != null) {
-                result = generateExpected(testCase, mainSolution, expectedGenerationErrors);
+                result = generateExpected(testCase, mainSolution);
                 log.debug("Generate expected value: {}", result);
             }
         }
         return result;
     }
 
-    private String generateExpected(PolygonTestcase testCase,
-                                    ProgramSourceCode mainSolution,
-                                    List<RunSpec> expectedGenerationErrors) {
+    private String generateExpected(PolygonTestcase testCase, ProgramSourceCode mainSolution) {
         val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
                                   mainSolution.content(),
                                   testCase.getStdin(),
@@ -194,9 +201,8 @@ public class PolygonConverterService {
         try {
             return jobeInABoxService.submitRun(runSpec);
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
-            expectedGenerationErrors.add(runSpec);
+            throw new TestCaseGenerationException(runSpec);
         }
-        return null;
     }
 
     private String extractExpected(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
@@ -205,15 +211,14 @@ public class PolygonConverterService {
 
     private String getStdinValue(PolygonTestcase testCase,
                                  ZipEntryContentExtractor<String> extractor,
-                                 Map<String, ProgramSourceCode> generators,
-                                 List<RunSpec> stdinGenerationErrors) {
+                                 Map<String, ProgramSourceCode> generators) {
         String result = null;
         try {
             result = extractStdin(testCase, extractor);
             log.debug("Extract stdin value: {}", result);
         } catch (PolygonPackageIncomplete e) {
             if (testCase.getMetaInfo().method() == TestCaseMetaInfo.Method.GENERATED) {
-                result = generateStdin(testCase, generators, stdinGenerationErrors);
+                result = generateStdin(testCase, generators);
                 log.debug("Generate stdin value: {}", result);
             }
         }
@@ -221,8 +226,7 @@ public class PolygonConverterService {
     }
 
     private String generateStdin(PolygonTestcase testCase,
-                                 Map<String, ProgramSourceCode> generators,
-                                 List<RunSpec> stdinGenerationErrors) {
+                                 Map<String, ProgramSourceCode> generators) {
         val cmd = testCase.getMetaInfo().generationCommand();
         val tokens = cmd.split(" ");
         val generatorName = tokens[0];
@@ -235,9 +239,8 @@ public class PolygonConverterService {
         try {
             return jobeInABoxService.submitRun(runSpec);
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
-            stdinGenerationErrors.add(runSpec);
+            throw new TestCaseGenerationException(runSpec);
         }
-        return null;
     }
 
     private String extractStdin(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
