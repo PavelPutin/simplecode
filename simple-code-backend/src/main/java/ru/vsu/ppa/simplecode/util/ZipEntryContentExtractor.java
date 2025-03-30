@@ -6,13 +6,14 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.zip.ZipFile;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.val;
 import ru.vsu.ppa.simplecode.service.PolygonPackageIncomplete;
 
-@RequiredArgsConstructor
+@Setter
 public abstract class ZipEntryContentExtractor<T> {
-    private final ZipFile zip;
+    private ZipFile zip;
 
     @SneakyThrows
     public T extract(Path pathToEntry) {

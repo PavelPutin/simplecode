@@ -2,63 +2,34 @@ package ru.vsu.ppa.simplecode.service;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
+import java.util.function.Function;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
-import org.springframework.stereotype.Service;
-import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
-import ru.vsu.ppa.simplecode.configuration.ProblemXmlParsingProperties;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
 import ru.vsu.ppa.simplecode.model.PolygonToCodeRunnerConversionResult;
 import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
 import ru.vsu.ppa.simplecode.model.ProgramingProblem;
 import ru.vsu.ppa.simplecode.model.RunSpec;
-import ru.vsu.ppa.simplecode.model.SourceCodeLanguage;
 import ru.vsu.ppa.simplecode.model.StatementFile;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
-import ru.vsu.ppa.simplecode.util.PathHelper;
-import ru.vsu.ppa.simplecode.util.TexToHtmlConverter;
-import ru.vsu.ppa.simplecode.util.XmlNodeHelper;
-import ru.vsu.ppa.simplecode.util.ZipEntryByteArrayContentExtractor;
-import ru.vsu.ppa.simplecode.util.ZipEntryContentExtractor;
-import ru.vsu.ppa.simplecode.util.ZipEntryStringContentExtractor;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.xpath.XPath;
+import ru.vsu.ppa.simplecode.util.PolygonZipAccessObject;
 
-@Service
 @Log4j2
 @RequiredArgsConstructor
-public class PolygonConverterService {
+public abstract class PolygonConverterService {
 
-    private final DocumentBuilder xmlDocumentBuilder;
-    private final XPath xPath;
-    private final ProblemXmlParsingProperties problemXmlParsingProperties;
     private final JobeInABoxService jobeInABoxService;
-    private final ObjectMapper jacksonObjectMapper;
 
     /**
      * Converts a polygon package to a programming problem.
@@ -69,34 +40,28 @@ public class PolygonConverterService {
     @SneakyThrows(IOException.class)
     public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
-            val metaInfo = extractTaskMetaInfo(zip);
-            log.debug("Task meta info: {}", metaInfo);
-
-            return getPolygonToCodeRunnerConversionResult(metaInfo, zip);
+            val polygonZipAccessObject = getPolygonZipAccessObject(zip);
+            return getPolygonToCodeRunnerConversionResult(polygonZipAccessObject);
         }
     }
 
-    private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(TaskMetaInfo metaInfo,
-                                                                                       ZipFile zip) {
-        val stringExtractor = new ZipEntryStringContentExtractor(zip);
-        val byteExtractor = new ZipEntryByteArrayContentExtractor(zip);
+    protected abstract PolygonZipAccessObject getPolygonZipAccessObject(ZipFile zip);
 
-        val statement = extractStatement(metaInfo.statementPath(), stringExtractor);
+    @SneakyThrows
+    private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(PolygonZipAccessObject polygonZipAccessObject) {
+        val statement = polygonZipAccessObject.extractStatement();
         log.debug("Statement: {}", statement);
 
-        List<StatementFile> images = extractImagesFromStatement(metaInfo.statementPath(), byteExtractor, statement);
+        List<StatementFile> images = polygonZipAccessObject.extractImagesFromStatement(statement);
         log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
 
-        val mainSolution = new ProgramSourceCode(stringExtractor.extract(metaInfo.mainSolution.path()),
-                                                 metaInfo.mainSolution.language());
+        val mainSolution = polygonZipAccessObject.extractMainSolution();
         log.debug("Main solution: {}", mainSolution);
 
-        Map<String, ProgramSourceCode> generators = mapGeneratorNames(metaInfo, stringExtractor);
+        Map<String, ProgramSourceCode> generators = polygonZipAccessObject.extractGenerators();
         log.debug("Generators: {}", generators);
 
-        List<PolygonTestcase> testCases = metaInfo.testCases().stream()
-                .map(PolygonTestcase::new)
-                .toList();
+        List<PolygonTestcase> testCases = polygonZipAccessObject.extractTestCases();
 
         List<RunSpec> stdinGenerationErrors = new ArrayList<>();
         List<RunSpec> expectedGenerationErrors = new ArrayList<>();
@@ -107,7 +72,8 @@ public class PolygonConverterService {
                       testCase.getMetaInfo().number() + 1);
 
             try {
-                String stdin = getStdinValue(testCase, stringExtractor, generators);
+                String stdin = polygonZipAccessObject.extractStdin(testCase)
+                        .orElseGet(() -> generateStdin(testCase, generators));
                 testCase.setStdin(stdin);
             } catch (TestCaseGenerationException e) {
                 stdinGenerationErrors.add(e.getRunSpec());
@@ -115,7 +81,8 @@ public class PolygonConverterService {
             }
 
             try {
-                String expected = getExpectedValue(testCase, stringExtractor, mainSolution);
+                String expected = polygonZipAccessObject.extractExpected(testCase)
+                        .orElseGet(() -> generateExpected(testCase, mainSolution));
                 testCase.setExpected(expected);
             } catch (TestCaseGenerationException e) {
                 expectedGenerationErrors.add(e.getRunSpec());
@@ -133,9 +100,9 @@ public class PolygonConverterService {
         expectedGenerationErrors.forEach(log::debug);
 
         val problem = new ProgramingProblem(
-                metaInfo.name(),
-                metaInfo.timeLimit(),
-                metaInfo.memoryLimit().toMegabytes(),
+                polygonZipAccessObject.extractName(),
+                polygonZipAccessObject.extractTimeLimit(),
+                polygonZipAccessObject.extractMemoryLimit(),
                 statement.getAsHtml(),
                 images,
                 mainSolution,
@@ -146,87 +113,11 @@ public class PolygonConverterService {
         return new PolygonToCodeRunnerConversionResult(problem, stdinGenerationErrors, expectedGenerationErrors);
     }
 
-    @SneakyThrows
-    private Statement extractStatement(Path path, ZipEntryContentExtractor<String> extractor) {
-        val json = extractor.extract(path.resolve("problem-properties.json"));
-        return jacksonObjectMapper.readValue(json, Statement.class);
-    }
-
-    private List<StatementFile> extractImagesFromStatement(Path path,
-                                                           ZipEntryContentExtractor<byte[]> extractor,
-                                                           Statement statement) {
-        return Stream.of(statement.legend(), statement.input(), statement.output(), statement.notes())
-                .map(t -> extractImages(path, extractor, t))
-                .flatMap(List::stream)
-                .toList();
-    }
-
-    private List<StatementFile> extractImages(Path path, ZipEntryContentExtractor<byte[]> extractor, String text) {
-        if (text == null) {
-            return Collections.emptyList();
-        }
-        Pattern includeGraphics = Pattern.compile("\\\\includegraphics.*\\{(.*)}");
-        Matcher graphics = includeGraphics.matcher(text);
-        return graphics.results()
-                .map(r -> r.group(1))
-                .map(name -> {
-                    byte[] data = extractor.extract(path.resolve(name));
-                    data = Base64.getEncoder().encode(data);
-                    return new StatementFile(name, "/", "base64", data);
-                })
-                .toList();
-    }
-
-    private String getExpectedValue(PolygonTestcase testCase,
-                                    ZipEntryContentExtractor<String> extractor,
-                                    ProgramSourceCode mainSolution) {
-        String result = null;
-        try {
-            result = extractExpected(testCase, extractor);
-            log.debug("Extract expected value: {}", result);
-        } catch (PolygonPackageIncomplete e) {
-            if (testCase.getStdin() != null) {
-                result = generateExpected(testCase, mainSolution);
-                log.debug("Generate expected value: {}", result);
-            }
-        }
-        return result;
-    }
-
-    private String generateExpected(PolygonTestcase testCase, ProgramSourceCode mainSolution) {
-        val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
-                                  mainSolution.content(),
-                                  testCase.getStdin(),
-                                  null);
-        try {
-            return jobeInABoxService.submitRun(runSpec);
-        } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
-            throw new TestCaseGenerationException(runSpec);
-        }
-    }
-
-    private String extractExpected(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
-        return extractor.extract(testCase.getMetaInfo().expectedSource()).trim();
-    }
-
-    private String getStdinValue(PolygonTestcase testCase,
-                                 ZipEntryContentExtractor<String> extractor,
-                                 Map<String, ProgramSourceCode> generators) {
-        String result = null;
-        try {
-            result = extractStdin(testCase, extractor);
-            log.debug("Extract stdin value: {}", result);
-        } catch (PolygonPackageIncomplete e) {
-            if (testCase.getMetaInfo().method() == TestCaseMetaInfo.Method.GENERATED) {
-                result = generateStdin(testCase, generators);
-                log.debug("Generate stdin value: {}", result);
-            }
-        }
-        return result;
-    }
-
     private String generateStdin(PolygonTestcase testCase,
                                  Map<String, ProgramSourceCode> generators) {
+        if (testCase.getMetaInfo().method() != TestCaseMetaInfo.Method.GENERATED) {
+            return null;
+        }
         val cmd = testCase.getMetaInfo().generationCommand();
         val tokens = cmd.split(" ");
         val generatorName = tokens[0];
@@ -237,26 +128,29 @@ public class PolygonConverterService {
                                   null,
                                   new RunSpec.Parameters(args));
         try {
-            return jobeInABoxService.submitRun(runSpec);
+            val result = jobeInABoxService.submitRun(runSpec);
+            log.debug("Generate stdin value: {}", result);
+            return result;
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new TestCaseGenerationException(runSpec);
         }
     }
 
-    private String extractStdin(PolygonTestcase testCase, ZipEntryContentExtractor<String> extractor) {
-        return extractor.extract(testCase.getMetaInfo().stdinSource()).trim();
-    }
-
-    private Map<String, ProgramSourceCode> mapGeneratorNames(TaskMetaInfo metaInfo,
-                                                             ZipEntryContentExtractor<String> extractor) {
-        Map<String, ProgramSourceCode> generators = new HashMap<>();
-        for (var generator : metaInfo.generators()) {
-            val name = PathHelper.getFileNameWithoutExtension(generator.path().getFileName());
-            val content = extractor.extract(generator.path());
-            val generatorSourceCode = new ProgramSourceCode(content, generator.language());
-            generators.put(name, generatorSourceCode);
+    private String generateExpected(PolygonTestcase testCase, ProgramSourceCode mainSolution) {
+        if (testCase.getStdin() == null) {
+            return null;
         }
-        return generators;
+        val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
+                                  mainSolution.content(),
+                                  testCase.getStdin(),
+                                  null);
+        try {
+            val result = jobeInABoxService.submitRun(runSpec);
+            log.debug("Generate expected value: {}", result);
+            return result;
+        } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+            throw new TestCaseGenerationException(runSpec);
+        }
     }
 
     /**
@@ -271,177 +165,5 @@ public class PolygonConverterService {
         val zipPath = Paths.get(tempdir, polygonPackage.getOriginalFilename());
         polygonPackage.transferTo(zipPath);
         return new ZipFile(zipPath.toFile());
-    }
-
-    @SneakyThrows
-    private TaskMetaInfo extractTaskMetaInfo(ZipFile zip) {
-        val problemXmlDescription = zip.getEntry("problem.xml");
-        if (problemXmlDescription == null) {
-            throw new PolygonPackageIncomplete("No problem.xml entry in the zip file");
-        }
-
-        var docHelper = new XmlNodeHelper(getDocument(zip, problemXmlDescription), xPath);
-
-        val taskName = docHelper.getAttributeValue(problemXmlParsingProperties.name().xpath(),
-                                                   problemXmlParsingProperties.name().attribute())
-                .orElse(problemXmlParsingProperties.name().defaultValue());
-
-        val timeLimitMillis = docHelper.getDouble(problemXmlParsingProperties.timeLimitMillis().xpath())
-                .map(Double::intValue)
-                .orElse(problemXmlParsingProperties.timeLimitMillis().defaultValue());
-
-        val memoryLimit = docHelper.getDouble(problemXmlParsingProperties.memoryLimit().xpath())
-                .map(Double::intValue)
-                .map(DataSize::ofBytes)
-                .orElse(problemXmlParsingProperties.memoryLimit().defaultValue());
-
-        val statementPath = docHelper.getAttributeValue(problemXmlParsingProperties.statement().xpath(),
-                                                        problemXmlParsingProperties.statement().attribute())
-                .map(Paths::get)
-                .map(Path::getParent)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties
-                                                                                                .statement()
-                                                                                                .xpath(),
-                                                                                        problemXmlParsingProperties
-                                                                                                .statement()
-                                                                                                .attribute()));
-
-        val solutionSourceElement = docHelper.getNode(problemXmlParsingProperties.executables().mainSolution().xpath())
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagNotFound(problemXmlParsingProperties.executables()
-                                                                                   .mainSolution()
-                                                                                   .xpath()));
-
-        val mainSolution = extractExecutable(solutionSourceElement,
-                                             problemXmlParsingProperties.executables().mainSolution().xpath());
-
-        val executables = docHelper.getNodeList(problemXmlParsingProperties.executables().other().xpath());
-
-        List<ExecutableMetaInfo> executablesMetaInfo = IntStream.range(0, executables.getLength())
-                .mapToObj(executables::item)
-                .map(n -> extractExecutable(n, problemXmlParsingProperties.executables().other().xpath()))
-                .toList();
-
-        val testSets = docHelper.getNodeList(problemXmlParsingProperties.testSets().xpath());
-        List<TestCaseMetaInfo> testCasesMetaInfo = IntStream.range(0, testSets.getLength())
-                .mapToObj(testSets::item)
-                .map(this::extractTestSet)
-                .flatMap(Collection::stream)
-                .toList();
-
-        // Return a new TaskMetaInfo object with the extracted task name and default values for other fields
-        return new TaskMetaInfo(taskName,
-                                timeLimitMillis,
-                                memoryLimit,
-                                statementPath,
-                                mainSolution,
-                                executablesMetaInfo,
-                                testCasesMetaInfo);
-    }
-
-    @SneakyThrows
-    private ExecutableMetaInfo extractExecutable(Node node, String nodeXPath) {
-        val nodeHelper = new XmlNodeHelper(node, xPath);
-
-        val pathToSource = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().pathAttribute())
-                .map(Paths::get)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete
-                        .tagWithAttributeNotFound(nodeXPath,
-                                                  problemXmlParsingProperties.executables().pathAttribute()));
-
-        val language = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().languageAttribute())
-                .map(SourceCodeLanguage::getFromPolygonNotation)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete
-                        .tagWithAttributeNotFound(nodeXPath,
-                                                  problemXmlParsingProperties.executables().languageAttribute()));
-        return new ExecutableMetaInfo(pathToSource, language);
-    }
-
-    /**
-     * Извлекает набор тестов из узла XML.
-     *
-     * @param testSet узел XML, представляющий набор тестов
-     * @return список метаинформации о тестовых случаях
-     * @throws RuntimeException если произошла ошибка при извлечении набора тестов
-     */
-    @SneakyThrows
-    private List<TestCaseMetaInfo> extractTestSet(Node testSet) {
-        val nodeHelper = new XmlNodeHelper(testSet, xPath);
-        val testSetName = nodeHelper.getAttributeValue(problemXmlParsingProperties.testSets().name().attribute())
-                .orElseThrow();
-        val stdinPathPattern = nodeHelper.getString(problemXmlParsingProperties.testSets()
-                                                            .stdinPathPattern().xpath())
-                .orElse(testSetName + "/%02d");
-        val expectedPathPattern = nodeHelper.getString(problemXmlParsingProperties.testSets()
-                                                               .expectedPathPattern().xpath())
-                .orElse(testSetName + "/%02d.a");
-        val tests = nodeHelper.getNodeList(problemXmlParsingProperties.testSets().tests().xpath());
-
-        List<TestCaseMetaInfo> testCasesMetaInfo = new ArrayList<>();
-        for (int testNumber = 0; testNumber < tests.getLength(); testNumber++) {
-            val testHelper = new XmlNodeHelper(tests.item(testNumber), xPath);
-
-            val stdinSource = Paths.get(stdinPathPattern.formatted(testNumber + 1));
-            val expectedSource = Paths.get(expectedPathPattern.formatted(testNumber + 1));
-
-            val sample = testHelper
-                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().sample().attribute())
-                    .map(Boolean::parseBoolean)
-                    .orElse(false);
-
-            val method = testHelper
-                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().method().attribute())
-                    .map(TestCaseMetaInfo.Method::parse)
-                    .orElse(TestCaseMetaInfo.Method.MANUAL);
-
-            val generationCommand = testHelper
-                    .getAttributeValue(problemXmlParsingProperties.testSets().tests().cmd().attribute())
-                    .orElse(null);
-
-            testCasesMetaInfo.add(new TestCaseMetaInfo(testSetName,
-                                                       testNumber,
-                                                       stdinSource,
-                                                       expectedSource,
-                                                       sample,
-                                                       method,
-                                                       generationCommand));
-        }
-        return testCasesMetaInfo;
-    }
-
-    /**
-     * Получает документ из ZIP-файла.
-     *
-     * @param zip                   ZIP-файл, из которого нужно получить документ
-     * @param problemXmlDescription ZIP-запись, представляющая XML-описание проблемы
-     * @return документ, полученный из ZIP-файла
-     * @throws SAXException если произошла ошибка при разборе XML-документа
-     * @throws IOException  если произошла ошибка ввода-вывода
-     */
-    private Document getDocument(ZipFile zip, ZipEntry problemXmlDescription) throws SAXException, IOException {
-        val document = xmlDocumentBuilder.parse(zip.getInputStream(problemXmlDescription));
-        document.getDocumentElement().normalize();
-        return document;
-    }
-
-    private record TaskMetaInfo(String name,
-                                int timeLimit,
-                                DataSize memoryLimit,
-                                Path statementPath,
-                                ExecutableMetaInfo mainSolution,
-                                List<ExecutableMetaInfo> generators,
-                                List<TestCaseMetaInfo> testCases) {}
-
-    private record ExecutableMetaInfo(Path path, SourceCodeLanguage language) {}
-
-    private record Statement(String legend, String input, String output, String notes) {
-
-        private String getAsHtml() {
-            val legend = TexToHtmlConverter.convert(this.legend);
-            val input = TexToHtmlConverter.convert(this.input);
-            val output = TexToHtmlConverter.convert(this.output);
-            val notes = TexToHtmlConverter.convert(this.notes);
-            return legend + "<h3>Входные данные</h3>" + input + "<h3>Выходные данные</h3>"
-                    + output + "<h3>Примечания</h3>" + notes;
-        }
     }
 }
