@@ -151,9 +151,11 @@ public class PolygonZipAccessObject {
         val statementPath = docHelper.getAttributeValue(problemXmlParsingProperties.statement().xpath(),
                                                         problemXmlParsingProperties.statement().attribute())
                 .map(Paths::get).map(Path::getParent)
-                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties.statement()
+                .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(problemXmlParsingProperties
+                                                                                                .statement()
                                                                                                 .xpath(),
-                                                                                        problemXmlParsingProperties.statement()
+                                                                                        problemXmlParsingProperties
+                                                                                                .statement()
                                                                                                 .attribute()));
 
         val solutionSourceElement = docHelper.getNode(problemXmlParsingProperties.executables().mainSolution().xpath())
@@ -188,14 +190,17 @@ public class PolygonZipAccessObject {
         val nodeHelper = new XmlNodeHelper(node, xPath);
 
         val pathToSource = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().pathAttribute())
-                .map(Paths::get).orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                                        problemXmlParsingProperties.executables()
-                                                                                                                .pathAttribute()));
+                .map(Paths::get).orElseThrow(
+                        () -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
+                                                                                   problemXmlParsingProperties
+                                                                                           .executables()
+                                                                                           .pathAttribute()));
 
         val language = nodeHelper.getAttributeValue(problemXmlParsingProperties.executables().languageAttribute())
                 .map(SourceCodeLanguage::getFromPolygonNotation)
                 .orElseThrow(() -> PolygonProblemXMLIncomplete.tagWithAttributeNotFound(nodeXPath,
-                                                                                        problemXmlParsingProperties.executables()
+                                                                                        problemXmlParsingProperties
+                                                                                                .executables()
                                                                                                 .languageAttribute()));
         return new ExecutableMetaInfo(pathToSource, language);
     }

@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +47,8 @@ public abstract class PolygonConverterService {
     protected abstract PolygonZipAccessObject getPolygonZipAccessObject(ZipFile zip);
 
     @SneakyThrows
-    private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(PolygonZipAccessObject polygonZipAccessObject) {
+    private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(
+            PolygonZipAccessObject polygonZipAccessObject) {
         val statement = polygonZipAccessObject.extractStatement();
         log.debug("Statement: {}", statement);
 

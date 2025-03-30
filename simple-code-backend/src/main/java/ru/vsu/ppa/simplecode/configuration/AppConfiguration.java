@@ -100,7 +100,12 @@ public class AppConfiguration {
     public PolygonZipAccessObject polygonZipAccessObject(ProblemXmlParsingProperties problemXmlParsingProperties,
                                                          ObjectMapper jacksonObjectMapper) throws
             ParserConfigurationException {
-        return new PolygonZipAccessObject(documentExtractor(), stringExtractor(), byteExtractor(), xPath(), problemXmlParsingProperties, jacksonObjectMapper);
+        return new PolygonZipAccessObject(documentExtractor(),
+                                          stringExtractor(),
+                                          byteExtractor(),
+                                          xPath(),
+                                          problemXmlParsingProperties,
+                                          jacksonObjectMapper);
     }
 
     @Bean

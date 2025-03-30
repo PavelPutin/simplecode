@@ -6,11 +6,11 @@ import ru.vsu.ppa.simplecode.util.TexToHtmlConverter;
 public record Statement(String legend, String input, String output, String notes) {
 
     public String getAsHtml() {
-        val legend = TexToHtmlConverter.convert(this.legend);
-        val input = TexToHtmlConverter.convert(this.input);
-        val output = TexToHtmlConverter.convert(this.output);
-        val notes = TexToHtmlConverter.convert(this.notes);
-        return legend + "<h3>Входные данные</h3>" + input + "<h3>Выходные данные</h3>"
-                + output + "<h3>Примечания</h3>" + notes;
+        val legendHtml = TexToHtmlConverter.convert(this.legend);
+        val inputHtml = TexToHtmlConverter.convert(this.input);
+        val outputHtml = TexToHtmlConverter.convert(this.output);
+        val notesHtml = TexToHtmlConverter.convert(this.notes);
+        return legendHtml + "<h3>Входные данные</h3>" + inputHtml + "<h3>Выходные данные</h3>"
+                + outputHtml + "<h3>Примечания</h3>" + notesHtml;
     }
 }

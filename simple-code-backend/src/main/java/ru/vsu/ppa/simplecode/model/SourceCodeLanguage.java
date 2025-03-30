@@ -39,14 +39,6 @@ public enum SourceCodeLanguage {
      */
     PYTHON3(List.of("python.3", "python.pypy3-64"), "python3");
 
-    /**
-     * Список обозначений языка в системе Polygon.
-     * -- GETTER --
-     *  Возвращает список обозначений языка в системе Polygon.
-     *
-     * @return список обозначений языка в системе Polygon
-
-     */
     private final List<String> polygonNotation;
 
     /**
@@ -55,16 +47,9 @@ public enum SourceCodeLanguage {
      *  Возвращает обозначение языка в системе Jobe.
      *
      * @return обозначение языка в системе Jobe
-
      */
     private final String jobeNotation;
 
-    /**
-     * Конструктор перечисления SourceCodeLanguage.
-     *
-     * @param polygonNotation список обозначений языка в системе Polygon
-     * @param jobeNotation обозначение языка в системе Jobe
-     */
     SourceCodeLanguage(List<String> polygonNotation, String jobeNotation) {
         this.polygonNotation = polygonNotation;
         this.jobeNotation = jobeNotation;
