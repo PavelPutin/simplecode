@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class TexToHtmlConverter {
     private static final List<ReplacePair> REPLACE_PAIRS = List.of(
             new ReplacePair(Pattern.compile("\\r\\n", Pattern.DOTALL), "\n"),
-            new ReplacePair(Pattern.compile("~---", Pattern.DOTALL), "mdash"),
+            new ReplacePair(Pattern.compile("~---", Pattern.DOTALL), " &mdash;"),
             new ReplacePair(Pattern.compile("[`']", Pattern.DOTALL), "'"),
             new ReplacePair(Pattern.compile("\\${1,2}(.*?)\\${1,2}", Pattern.DOTALL), "\\\\($1\\\\)"),
             new ReplacePair(Pattern.compile("<<(.*?)>>"), "&laquo;$1&raquo;"),
@@ -44,7 +44,7 @@ public class TexToHtmlConverter {
             new ReplacePair(Pattern.compile("\\\\item (.+?)\n", Pattern.DOTALL),
                             "<li>$1</li>"),
             new ReplacePair(Pattern.compile("\\\\includegraphics.*?\\{(.*?)}", Pattern.DOTALL),
-                            "<img src=\"$1\" alt=\"$1\"/>")
+                            "<img class=\"img-fluid align-top\" style=\"display: block; margin-left: auto; margin-right: auto;\" src=\"@@PLUGINFILE@@/$1\" alt=\"$1\"/>")
     );
 
     public static String convert(String text) {

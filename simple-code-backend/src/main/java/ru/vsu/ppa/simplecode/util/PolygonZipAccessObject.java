@@ -112,7 +112,7 @@ public class PolygonZipAccessObject {
                 .map(name -> {
                     byte[] data = byteExtractor.extract(metaInfo.statementPath().resolve(name));
                     data = Base64.getEncoder().encode(data);
-                    return new StatementFile(name, "/", "base64", data);
+                    return new StatementFile(name, "/", "base64", new String(data));
                 })
                 .toList();
     }
