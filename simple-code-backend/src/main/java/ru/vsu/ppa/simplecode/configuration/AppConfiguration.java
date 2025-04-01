@@ -1,15 +1,20 @@
 package ru.vsu.ppa.simplecode.configuration;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
 import lombok.val;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.w3c.dom.Document;
@@ -29,6 +34,7 @@ import javax.xml.xpath.XPathFactory;
 /**
  * Configuration class for the application.
  */
+@Log4j2
 @Configuration
 @RequiredArgsConstructor
 public class AppConfiguration {
@@ -124,5 +130,14 @@ public class AppConfiguration {
     @Scope("prototype")
     public ZipEntryContentExtractor<Document> documentExtractor() throws ParserConfigurationException {
         return new ZipEntryDocumentContentExtractor(xmlDocumentBuilder());
+    }
+
+    @Bean
+    public String base64TestLibHeaderFile() {
+        try (InputStream stream = new ClassPathResource("testlib.h").getInputStream()) {
+            return new String(Base64.getEncoder().encode(stream.readAllBytes()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
