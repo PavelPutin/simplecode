@@ -126,6 +126,7 @@ public abstract class PolygonConverterService {
         val runSpec = new RunSpec(generator.language().getJobeNotation(),
                                   generator.content(),
                                   null,
+                                  null,
                                   new RunSpec.Parameters(args));
         try {
             val result = jobeInABoxService.submitRun(runSpec);
@@ -143,6 +144,7 @@ public abstract class PolygonConverterService {
         val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
                                   mainSolution.content(),
                                   testCase.getStdin(),
+                                  null,
                                   null);
         try {
             val result = jobeInABoxService.submitRun(runSpec);

@@ -33,6 +33,7 @@ public class TestGenerationService {
                     val runSpeck = new RunSpec(runSpec.getAnswerLanguage(),
                                                runSpec.getTask().getAnswer(),
                                                testcase.getStdin(),
+                                               null,
                                                null);
                     var stdout = jobeInABoxService.submitRun(runSpeck);
                     if (!stdout.equals(testcase.getExpected())) {
@@ -65,6 +66,7 @@ public class TestGenerationService {
                         val stdinGenerationRun = new RunSpec(runSpec.getTestGeneratorLanguage(),
                                                              runSpec.getTask().getTestGenerator().getCustomCode(),
                                                              history.toString(),
+                                                             null,
                                                              null);
                         var stdin = jobeInABoxService.submitRun(stdinGenerationRun);
                         history.add(stdin);
@@ -72,6 +74,7 @@ public class TestGenerationService {
                         val expectedGenerationRun = new RunSpec(runSpec.getAnswerLanguage(),
                                                                 runSpec.getTask().getAnswer(),
                                                                 stdin,
+                                                                null,
                                                                 null);
                         var expected = jobeInABoxService.submitRun(expectedGenerationRun);
                         testcases.add(new Testcase(stdin, expected));

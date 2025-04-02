@@ -11,6 +11,8 @@ public record RunSpec(
         @JsonProperty("language_id") String languageId,
         @JsonProperty("sourcecode") String sourceCode,
         String input,
+        @JsonProperty("file_list")
+        List<List<String>> files,
         Parameters parameters) {
 
     public record Parameters(
