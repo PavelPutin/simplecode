@@ -1,6 +1,7 @@
 package ru.vsu.ppa.simplecode.service;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
 import ru.vsu.ppa.simplecode.model.RunResult;
 import ru.vsu.ppa.simplecode.model.RunSpec;
 
@@ -32,7 +34,7 @@ public class JobeInABoxService {
      * @throws JsonProcessingException if an error occurs during JSON processing
      */
     public String submitRun(RunSpec runSpec) throws ExecutionException, InterruptedException, JsonProcessingException {
-        val runResult = jobeRestClient.post().contentType(MediaType.APPLICATION_JSON).body(runSpec).retrieve()
+        val runResult = jobeRestClient.post().uri("/runs").contentType(MediaType.APPLICATION_JSON).body(runSpec).retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
                 .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler).body(RunResult.class);
 
@@ -77,7 +79,21 @@ public class JobeInABoxService {
     private void clientErrorsHandler(HttpRequest request, ClientHttpResponse response) throws IOException {
         val message = new String(response.getBody().readAllBytes());
         log.debug("Error {}", message);
+        if (response.getStatusCode().isSameCodeAs(HttpStatusCode.valueOf(404))) {
+            throw new JobeFileNotFoundException(message);
+        }
         throw new RuntimeException(message);
+    }
+
+    public void putFile(JobeRunAssetFile file, String base64EncodedData) {
+        jobeRestClient.put()
+                .uri("/files/{id}", Map.of("id", file.id()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("file_contents", base64EncodedData))
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
+                .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler)
+                .toBodilessEntity();
     }
 
 }

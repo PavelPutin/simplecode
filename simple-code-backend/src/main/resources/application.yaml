@@ -7,8 +7,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 20MB
+      max-request-size: 20MB
 
 application:
   polygon:
@@ -53,5 +53,5 @@ application:
 jobe:
   client:
     timeout: 10s
-    base-url: http://localhost:8081/jobe/index.php/restapi/runs
+    base-url: http://localhost:8081/jobe/index.php/restapi
     max-errors-in-row: 5

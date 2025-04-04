@@ -1,6 +1,6 @@
 services:
   jobe:
-    image: trampgeek/jobeinabox:latest
+    image: pavelputin2003/diplom_jobeinabox:v1
     container_name: jobe
     ports:
       - 8081:80

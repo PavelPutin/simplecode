@@ -18,6 +18,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.w3c.dom.Document;
+import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
 import ru.vsu.ppa.simplecode.service.JobeInABoxService;
 import ru.vsu.ppa.simplecode.service.PolygonConverterService;
 import ru.vsu.ppa.simplecode.util.PolygonZipAccessObject;
@@ -89,8 +90,10 @@ public class AppConfiguration {
     @SneakyThrows
     public PolygonConverterService polygonConverterService(JobeInABoxService jobeInABoxService,
                                                            ObjectMapper jacksonObjectMapper,
-                                                           ProblemXmlParsingProperties problemXmlParsingProperties) {
-        return new PolygonConverterService(jobeInABoxService) {
+                                                           ProblemXmlParsingProperties problemXmlParsingProperties,
+                                                           String base64TestLibHeaderFile,
+                                                           JobeRunAssetFile testLibHeaderFile) {
+        return new PolygonConverterService(jobeInABoxService, base64TestLibHeaderFile, testLibHeaderFile) {
             @Override
             @SneakyThrows
             protected PolygonZipAccessObject getPolygonZipAccessObject(ZipFile zip) {
@@ -133,11 +136,16 @@ public class AppConfiguration {
     }
 
     @Bean
-    public String base64TestLibHeaderFile() {
-        try (InputStream stream = new ClassPathResource("testlib.h").getInputStream()) {
+    public String base64TestLibHeaderFile(JobeRunAssetFile testLibHeaderFile) {
+        try (InputStream stream = new ClassPathResource(testLibHeaderFile.name()).getInputStream()) {
             return new String(Base64.getEncoder().encode(stream.readAllBytes()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Bean
+    public JobeRunAssetFile testLibHeaderFile() {
+        return new JobeRunAssetFile("testlibheader", "testlib.h", true);
     }
 }

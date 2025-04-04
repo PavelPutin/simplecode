@@ -15,6 +15,7 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
 import org.springframework.web.multipart.MultipartFile;
+import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
 import ru.vsu.ppa.simplecode.model.PolygonToCodeRunnerConversionResult;
 import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
@@ -29,6 +30,8 @@ import ru.vsu.ppa.simplecode.util.PolygonZipAccessObject;
 public abstract class PolygonConverterService {
 
     private final JobeInABoxService jobeInABoxService;
+    private final String base64TestLibHeaderFile;
+    private final JobeRunAssetFile testLibHeaderFile;
 
     /**
      * Converts a polygon package to a programming problem.
@@ -123,13 +126,21 @@ public abstract class PolygonConverterService {
         val generatorName = tokens[0];
         val generator = generators.get(generatorName);
         List<String> args = Arrays.asList(tokens).subList(1, tokens.length);
+        List<String> compileArgs = List.of("-w");
         val runSpec = new RunSpec(generator.language().getJobeNotation(),
                                   generator.content(),
                                   null,
-                                  null,
-                                  new RunSpec.Parameters(args));
+                                  List.of(testLibHeaderFile.asList()),
+                                  new RunSpec.Parameters(args, compileArgs));
         try {
-            val result = jobeInABoxService.submitRun(runSpec);
+            String result;
+            try {
+                result = jobeInABoxService.submitRun(runSpec);
+            } catch (JobeFileNotFoundException e) {
+                jobeInABoxService.putFile(testLibHeaderFile, base64TestLibHeaderFile);
+                log.debug("Put file (stdin generation) {}", testLibHeaderFile);
+                result = jobeInABoxService.submitRun(runSpec);
+            }
             log.debug("Generate stdin value: {}", result);
             return result;
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
@@ -144,13 +155,20 @@ public abstract class PolygonConverterService {
         val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
                                   mainSolution.content(),
                                   testCase.getStdin(),
-                                  null,
-                                  null);
+                                  List.of(testLibHeaderFile.asList()),
+                                  new RunSpec.Parameters(null, List.of("-w")));
         try {
-            val result = jobeInABoxService.submitRun(runSpec);
+            String result;
+            try {
+                result = jobeInABoxService.submitRun(runSpec);
+            } catch (JobeFileNotFoundException e) {
+                jobeInABoxService.putFile(testLibHeaderFile, base64TestLibHeaderFile);
+                log.debug("Put file (expected generation) {}", testLibHeaderFile);
+                result = jobeInABoxService.submitRun(runSpec);
+            }
             log.debug("Generate expected value: {}", result);
             return result;
-        } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+        }  catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new TestCaseGenerationException(runSpec);
         }
     }
