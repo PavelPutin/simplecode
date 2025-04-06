@@ -89,15 +89,13 @@ public class AppConfiguration {
     @Bean
     @SneakyThrows
     public PolygonConverterService polygonConverterService(JobeInABoxService jobeInABoxService,
-                                                           ObjectMapper jacksonObjectMapper,
-                                                           ProblemXmlParsingProperties problemXmlParsingProperties,
+                                                           PolygonZipAccessObject polygonZipAccessObject,
                                                            String base64TestLibHeaderFile,
                                                            JobeRunAssetFile testLibHeaderFile) {
         return new PolygonConverterService(jobeInABoxService, base64TestLibHeaderFile, testLibHeaderFile) {
             @Override
             @SneakyThrows
             protected PolygonZipAccessObject getPolygonZipAccessObject(ZipFile zip) {
-                val polygonZipAccessObject = polygonZipAccessObject(problemXmlParsingProperties, jacksonObjectMapper);
                 polygonZipAccessObject.setZip(zip);
                 return polygonZipAccessObject;
             }
