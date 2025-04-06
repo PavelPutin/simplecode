@@ -354,6 +354,33 @@ class SimpleCodeViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> openPolygonFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null) {
+      try {
+        _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
+
+        _task.name = "name";
+        _task.questionText = "questionText";
+        _task.defaultGrade = "1";
+        _task.answer = "answer";
+        _task.testGenerator["customCode"] = "testGenerator/customCode";
+        _task.testcases.clear();
+
+        _task.testcases.add(Testcase("stdin", "expected"));
+
+        _showingIndex = 1;
+        _updateYamlData();
+        _updateXmlData();
+        notifyListeners();
+      } catch (e) {
+        _errorMessages.add("Не удалось загрузить файл");
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
   Future<void> downloadYamlFile() async {
     downloadFile(fileName, "yaml", yamlData);
   }

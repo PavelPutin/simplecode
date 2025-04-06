@@ -62,6 +62,13 @@ class _HomePageState extends State<HomePage> {
                   child: const Text('Импортировать yaml файл'),
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.only(bottom: 8.0),
+                child: OutlinedButton(
+                  onPressed: _importPolygonFile,
+                  child: const Text('Импортировать Polygon-zip файл'),
+                ),
+              ),
               OutlinedButton(
                 onPressed: _importXmlFile,
                 child: const Text('Импортировать MoodleXml файл'),
@@ -94,6 +101,13 @@ class _HomePageState extends State<HomePage> {
       _fileLoading = context.read<SimpleCodeViewModel>().openYamlFile();
     });
   }
+
+  void _importPolygonFile() {
+    setState(() {
+      _fileLoading = context.read<SimpleCodeViewModel>().openPolygonFile();
+    });
+  }
+
 
   void _importXmlFile() {
     setState(() {
