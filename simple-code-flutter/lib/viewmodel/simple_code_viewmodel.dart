@@ -9,6 +9,7 @@ import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
 import 'package:yaml/yaml.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
 import '../model/utils.dart';
@@ -358,6 +359,18 @@ class SimpleCodeViewModel extends ChangeNotifier {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result != null) {
       try {
+        final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
+        request.files.add(http.MultipartFile.fromBytes("package", result.files.first.bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: result.files.first!.name));
+
+        var response = await request.send();
+        if (response.statusCode == 200) {
+          _errorMessages.add("Успех");
+        } else {
+          _errorMessages.add("Не удалось загрузить файл");
+          notifyListeners();
+          return;
+        }
+
         _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
 
         _task.name = "name";
@@ -374,7 +387,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
         _updateXmlData();
         notifyListeners();
       } catch (e) {
-        _errorMessages.add("Не удалось загрузить файл");
+        _errorMessages.add(e.toString());
+        _errorMessages.add("Не удалось загрузить файл вообще");
         notifyListeners();
         return;
       }
