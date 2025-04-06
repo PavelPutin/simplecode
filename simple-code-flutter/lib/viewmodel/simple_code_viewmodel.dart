@@ -88,7 +88,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
 
     final response = await http.post(
-      Uri.parse("/server/runs"),
+      Uri.parse("http://localhost:8080/runs"),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8'
       },
