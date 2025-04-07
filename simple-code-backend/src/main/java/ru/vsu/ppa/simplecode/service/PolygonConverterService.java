@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
@@ -24,11 +25,14 @@ import ru.vsu.ppa.simplecode.model.RunSpec;
 import ru.vsu.ppa.simplecode.model.StatementFile;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import ru.vsu.ppa.simplecode.util.PolygonZipAccessObject;
+import ru.vsu.ppa.simplecode.util.PolygonZipAccessObjectProvider;
 
 @Log4j2
+@Service
 @RequiredArgsConstructor
-public abstract class PolygonConverterService {
+public class PolygonConverterService {
 
+    private final PolygonZipAccessObjectProvider polygonZipAccessObjectProvider;
     private final JobeInABoxService jobeInABoxService;
     private final String base64TestLibHeaderFile;
     private final JobeRunAssetFile testLibHeaderFile;
@@ -42,12 +46,10 @@ public abstract class PolygonConverterService {
     @SneakyThrows(IOException.class)
     public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
-            val polygonZipAccessObject = getPolygonZipAccessObject(zip);
+            val polygonZipAccessObject = polygonZipAccessObjectProvider.getZipAccessObject(zip);
             return getPolygonToCodeRunnerConversionResult(polygonZipAccessObject);
         }
     }
-
-    protected abstract PolygonZipAccessObject getPolygonZipAccessObject(ZipFile zip);
 
     @SneakyThrows
     private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(

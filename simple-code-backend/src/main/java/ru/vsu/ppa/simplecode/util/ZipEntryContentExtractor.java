@@ -5,13 +5,19 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.zip.ZipFile;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
-@Setter
+@Component
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
+@RequiredArgsConstructor
 public abstract class ZipEntryContentExtractor<T> {
-    private ZipFile zip;
+    private final ZipFile zip;
 
     @SneakyThrows
     public T extract(Path pathToEntry) {

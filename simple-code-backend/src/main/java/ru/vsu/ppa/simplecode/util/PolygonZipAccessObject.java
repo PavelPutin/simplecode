@@ -19,6 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -33,7 +36,8 @@ import ru.vsu.ppa.simplecode.model.TaskMetaInfo;
 import ru.vsu.ppa.simplecode.model.TestCaseMetaInfo;
 import javax.xml.xpath.XPath;
 
-@RequiredArgsConstructor
+@Component
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class PolygonZipAccessObject {
 
     private final ZipEntryContentExtractor<Document> documentExtractor;
@@ -43,13 +47,21 @@ public class PolygonZipAccessObject {
     private final ProblemXmlParsingProperties problemXmlParsingProperties;
     private final ObjectMapper jacksonObjectMapper;
 
-    private TaskMetaInfo metaInfo;
+    private final TaskMetaInfo metaInfo;
 
-    public void setZip(ZipFile zip) {
-        documentExtractor.setZip(zip);
-        stringExtractor.setZip(zip);
-        byteExtractor.setZip(zip);
-        metaInfo = extractTaskMetaInfo();
+    public PolygonZipAccessObject(ZipEntryDocumentContentExtractor documentExtractor,
+                                  ZipEntryStringContentExtractor stringExtractor,
+                                  ZipEntryByteArrayContentExtractor byteExtractor,
+                                  XPath xPath,
+                                  ProblemXmlParsingProperties problemXmlParsingProperties,
+                                  ObjectMapper jacksonObjectMapper) {
+        this.documentExtractor = documentExtractor;
+        this.stringExtractor = stringExtractor;
+        this.byteExtractor = byteExtractor;
+        this.xPath = xPath;
+        this.problemXmlParsingProperties = problemXmlParsingProperties;
+        this.jacksonObjectMapper = jacksonObjectMapper;
+        this.metaInfo = extractTaskMetaInfo();
     }
 
     public Statement extractStatement() throws JsonProcessingException {
