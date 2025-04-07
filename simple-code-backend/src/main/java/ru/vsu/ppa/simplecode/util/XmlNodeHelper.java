@@ -1,7 +1,10 @@
 package ru.vsu.ppa.simplecode.util;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import javax.xml.xpath.XPath;
@@ -31,8 +34,8 @@ public class XmlNodeHelper {
      * @return an Optional containing the result of the evaluation, or an empty Optional if the result is not finite
      * @throws XPathExpressionException if the XPath expression is invalid
      */
-    public Optional<Double> getDouble(String path) throws XPathExpressionException {
-        return Optional.of((Double) xPath.evaluate(path, sourceNode, XPathConstants.NUMBER))
+    public XmlValue<Double> getDouble(String path) throws XPathExpressionException {
+        return XmlValue.ofNode((Double) xPath.evaluate(path, sourceNode, XPathConstants.NUMBER), path)
                 .filter(Double::isFinite);
     }
 
@@ -43,8 +46,12 @@ public class XmlNodeHelper {
      * @return the NodeList resulting from the evaluation
      * @throws XPathExpressionException if the XPath expression is invalid
      */
-    public NodeList getNodeList(String path) throws XPathExpressionException {
-        return (NodeList) xPath.evaluate(path, sourceNode, XPathConstants.NODESET);
+    public List<Node> getNodeList(String path) throws XPathExpressionException {
+        val list = (NodeList) xPath.evaluate(path, sourceNode, XPathConstants.NODESET);
+        return IntStream
+                .range(0, list.getLength())
+                .mapToObj(list::item)
+                .toList();
     }
 
     /**
@@ -54,8 +61,8 @@ public class XmlNodeHelper {
      * @return an Optional containing the result of the evaluation, or an empty Optional if the result is null
      * @throws XPathExpressionException if the XPath expression is invalid
      */
-    public Optional<String> getString(String path) throws XPathExpressionException {
-        return Optional.ofNullable((String) xPath.evaluate(path, sourceNode, XPathConstants.STRING));
+    public XmlValue<String> getString(String path) throws XPathExpressionException {
+        return XmlValue.ofNode((String) xPath.evaluate(path, sourceNode, XPathConstants.STRING), path);
     }
 
     /**
@@ -66,9 +73,12 @@ public class XmlNodeHelper {
      * @return an Optional containing the attribute value, or an empty Optional if the attribute is not found
      * @throws XPathExpressionException if the XPath expression is invalid
      */
-    public Optional<String> getAttributeValue(String path, String attributeName) throws XPathExpressionException {
-        return this.getNode(path)
-                .map(element -> element.getAttributes().getNamedItem(attributeName))
+    public XmlValue<String> getAttributeValue(String path, String attributeName) throws XPathExpressionException {
+        var node = (Node) xPath.evaluate(path, sourceNode, XPathConstants.NODE);
+        if (node == null) {
+            return XmlValue.empty();
+        }
+        return XmlValue.ofAttribute(node.getAttributes().getNamedItem(attributeName), path, attributeName)
                 .map(Node::getNodeValue);
     }
 
@@ -79,8 +89,8 @@ public class XmlNodeHelper {
      * @return an Optional containing the result of the evaluation, or an empty Optional if the result is null
      * @throws XPathExpressionException if the XPath expression is invalid
      */
-    public Optional<Node> getNode(String path) throws XPathExpressionException {
-        return Optional.ofNullable((Node) xPath.evaluate(path, sourceNode, XPathConstants.NODE));
+    public XmlValue<Node> getNode(String path) throws XPathExpressionException {
+        return XmlValue.ofNode((Node) xPath.evaluate(path, sourceNode, XPathConstants.NODE), path);
     }
 
     /**
@@ -89,8 +99,8 @@ public class XmlNodeHelper {
      * @param attributeName the name of the attribute to retrieve the value of
      * @return an Optional containing the attribute value, or an empty Optional if the attribute is not found
      */
-    public Optional<String> getAttributeValue(String attributeName) {
-        return Optional.ofNullable(sourceNode.getAttributes().getNamedItem(attributeName))
+    public XmlValue<String> getAttributeValue(String attributeName) {
+        return XmlValue.ofAttribute(sourceNode.getAttributes().getNamedItem(attributeName), sourceNode.getNodeName(), attributeName)
                 .map(Node::getNodeValue);
     }
 

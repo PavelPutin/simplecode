@@ -8,7 +8,6 @@ import java.util.zip.ZipFile;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.val;
-import ru.vsu.ppa.simplecode.service.PolygonPackageIncomplete;
 
 @Setter
 public abstract class ZipEntryContentExtractor<T> {

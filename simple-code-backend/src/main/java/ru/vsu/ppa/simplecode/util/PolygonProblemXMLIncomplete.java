@@ -1,4 +1,4 @@
-package ru.vsu.ppa.simplecode.service;
+package ru.vsu.ppa.simplecode.util;
 
 import java.text.MessageFormat;
 
