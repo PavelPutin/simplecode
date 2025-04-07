@@ -3,10 +3,15 @@ package ru.vsu.ppa.simplecode.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.ZipFile;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 
+@Component
+@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ZipEntryDocumentContentExtractor extends ZipEntryContentExtractor<Document> {
 
     private final DocumentBuilder xmlDocumentBuilder;

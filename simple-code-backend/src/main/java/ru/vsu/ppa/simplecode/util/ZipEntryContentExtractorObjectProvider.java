@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public abstract class ZipEntryContentExtractorObjectProvider<T> {
-    private final ObjectProvider<ZipEntryContentExtractor<T>> objectProvider;
+    protected final ObjectProvider<ZipEntryContentExtractor<T>> objectProvider;
 
     public ZipEntryContentExtractor<T> getExtractor(ZipFile zip) {
         return objectProvider.getObject(zip);
