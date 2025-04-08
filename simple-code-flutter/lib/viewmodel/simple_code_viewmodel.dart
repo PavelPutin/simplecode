@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:simple_code/model/available_language.dart';
@@ -87,6 +87,11 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   set moodleXmlData(String value) {
     _moodleXmlData = value;
+    notifyListeners();
+  }
+
+  void updateTestCaseShow(int number, bool value) {
+    task.testcases[number].show = value;
     notifyListeners();
   }
 
@@ -391,7 +396,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
       for (Map<String, dynamic> testcase in responseTestCases) {
         var stdin = testcase["stdin"];
         var expected = testcase["expected"];
-        _task.testcases.add(Testcase(stdin, expected, true));
+        var show = testcase["display"];
+        _task.testcases.add(Testcase(stdin, expected, show));
       }
 
       _showingIndex = 1;

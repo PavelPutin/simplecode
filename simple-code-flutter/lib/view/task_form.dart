@@ -511,6 +511,29 @@ class TestCaseField extends StatelessWidget {
               return null;
             },
           ),
+          Container(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  final value = !context.read<SimpleCodeViewModel>().task.testcases[number - 1].show;
+                  context.read<SimpleCodeViewModel>().updateTestCaseShow(number - 1, value);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Checkbox(
+                      value: context.read<SimpleCodeViewModel>().task.testcases[number - 1].show,
+                      onChanged: (bool? value) {
+                        context.read<SimpleCodeViewModel>().updateTestCaseShow(number - 1, value!);
+                      },
+                      semanticLabel: "Использовать как пример",
+                    ),
+                    const SizedBox(width: 8),
+                    const Text("Использовать как пример"),
+                  ],
+                )),
+          )
         ],
       ),
     );
