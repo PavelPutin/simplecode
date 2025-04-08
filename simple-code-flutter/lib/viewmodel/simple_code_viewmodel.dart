@@ -4,17 +4,17 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:simple_code/model/available_language.dart';
 import 'package:simple_code/model/task.dart';
 import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
 import 'package:yaml/yaml.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
-import '../model/utils.dart';
 import '../model/testcase.dart';
+import '../model/utils.dart';
 
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
@@ -23,24 +23,32 @@ class SimpleCodeViewModel extends ChangeNotifier {
   Task get task => _task;
 
   int _generatedTestsAmount = 1;
+
   int get generatedTestsAmount => _generatedTestsAmount;
-  set generatedTestsAmount (int value) => _generatedTestsAmount = value;
+
+  set generatedTestsAmount(int value) => _generatedTestsAmount = value;
 
   List<Testcase> _generatedTests = [];
+
   UnmodifiableListView<Testcase> get generatedTests => UnmodifiableListView(_generatedTests);
 
   AvailableLanguage _answerLanguage = AvailableLanguage.java;
+
   AvailableLanguage get answerLanguage => _answerLanguage;
-  set answerLanguage (AvailableLanguage value) => _answerLanguage = value;
+
+  set answerLanguage(AvailableLanguage value) => _answerLanguage = value;
 
   AvailableLanguage _testGeneratorLanguage = AvailableLanguage.java;
+
   AvailableLanguage get testGeneratorLanguage => _testGeneratorLanguage;
-  set testGeneratorLanguage (AvailableLanguage value) => _testGeneratorLanguage = value;
+
+  set testGeneratorLanguage(AvailableLanguage value) => _testGeneratorLanguage = value;
 
   int _showingIndex = 0;
 
   int get showingIndex => _showingIndex;
-  set showingIndex (int value) {
+
+  set showingIndex(int value) {
     if (value < 0 || value > 1) {
       throw ArgumentError("Showing index must be 0 or 1");
     }
@@ -67,7 +75,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
   String _yamlData = emptyDaraPlaceholder;
 
   String get yamlData => _yamlData;
-  set yamlData (String value) {
+
+  set yamlData(String value) {
     _yamlData = value;
     notifyListeners();
   }
@@ -75,7 +84,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
   String _moodleXmlData = emptyDaraPlaceholder;
 
   String get moodleXmlData => _moodleXmlData;
-  set moodleXmlData (String value) {
+
+  set moodleXmlData(String value) {
     _moodleXmlData = value;
     notifyListeners();
   }
@@ -88,14 +98,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
       "task": _task.toJson()
     };
 
-
-    final response = await http.post(
-      Uri.parse("http://localhost:8080/runs"),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8'
-      },
-      body: jsonEncode(request)
-    );
+    final response = await http.post(Uri.parse("http://localhost:8080/runs"),
+        headers: <String, String>{'Content-Type': 'application/json; charset=UTF-8'}, body: jsonEncode(request));
 
     if (response.statusCode == 200) {
       var body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -248,7 +252,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
               builder.attribute("useasexample", "1");
               builder.attribute("hiderestiffail", "0");
               builder.attribute("mark", "1.000000");
-              
+
               builder.element("testcode", nest: () {
                 builder.element("text");
               });
@@ -327,8 +331,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
           return;
         }
 
-        _fileNameWithoutExtension =
-            getFileNameWithoutExtension(result.files.first);
+        _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
 
         _yamlData = input;
 
@@ -342,8 +345,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
         _task.testcases.clear();
 
         for (YamlMap testcase in data["testcases"]) {
-          _task.testcases.add(Testcase(testcase["stdin"].toString().trim(),
-              testcase["expected"].toString().trim(), true));
+          _task.testcases.add(Testcase(testcase["stdin"].toString().trim(), testcase["expected"].toString().trim(), true));
         }
         _showingIndex = 0;
         _updateXmlData();
@@ -363,12 +365,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
     }
     try {
       final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
-      request.files.add(http.MultipartFile.fromBytes(
-          "package",
-          result.files.first.bytes!.toList(),
-          contentType: MediaType("multipart", "form-data"),
-          filename: result.files.first.name)
-      );
+      request.files.add(http.MultipartFile.fromBytes("package", result.files.first.bytes!.toList(),
+          contentType: MediaType("multipart", "form-data"), filename: result.files.first.name));
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
@@ -438,11 +436,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       int i = 1;
       for (YamlMap testcase in testcases) {
-        valid &=
-            _checkYamlProperty(testcase, "stdin",
-                message: "Тест $i не содержит свойство stdin") &&
-            _checkYamlProperty(testcase, "expected",
-                message: "Тест $i не содержит свойство expected");
+        valid &= _checkYamlProperty(testcase, "stdin", message: "Тест $i не содержит свойство stdin") &&
+            _checkYamlProperty(testcase, "expected", message: "Тест $i не содержит свойство expected");
         i++;
       }
     }
@@ -474,25 +469,18 @@ class SimpleCodeViewModel extends ChangeNotifier {
           return;
         }
 
-        _fileNameWithoutExtension =
-            getFileNameWithoutExtension(result.files.first);
+        _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
 
         _moodleXmlData = input;
 
-        _task.name =
-            data.xpath("/quiz/question/name/text").first.innerText.trim();
-        _task.questionText =
-            data.xpath("/quiz/question/questiontext/text").first.innerText.trim();
-        _task.defaultGrade =
-            data.xpath("/quiz/question/defaultgrade").first.innerText.trim();
-        _task.answer =
-            data.xpath("/quiz/question/answer").first.innerText.trim();
+        _task.name = data.xpath("/quiz/question/name/text").first.innerText.trim();
+        _task.questionText = data.xpath("/quiz/question/questiontext/text").first.innerText.trim();
+        _task.defaultGrade = data.xpath("/quiz/question/defaultgrade").first.innerText.trim();
+        _task.answer = data.xpath("/quiz/question/answer").first.innerText.trim();
         _task.testcases.clear();
 
         for (XmlNode testcase in data.xpath("/quiz/question/testcases/testcase")) {
-          _task.testcases.add(Testcase(
-              testcase.xpath("stdin/text").first.innerText,
-              testcase.xpath("expected/text").first.innerText, true));
+          _task.testcases.add(Testcase(testcase.xpath("stdin/text").first.innerText, testcase.xpath("expected/text").first.innerText, true));
         }
         _showingIndex = 1;
         _updateYamlData();
@@ -527,11 +515,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
     int i = 1;
     for (XmlNode node in testcases) {
-      valid &=
-          _checkXmlProperty(node, "stdin/text",
-              message: "Тест $i не содержит свойство stdin/text") &&
-          _checkXmlProperty(node, "expected/text",
-              message: "Тест $i не содержит свойство expected/text");
+      valid &= _checkXmlProperty(node, "stdin/text", message: "Тест $i не содержит свойство stdin/text") &&
+          _checkXmlProperty(node, "expected/text", message: "Тест $i не содержит свойство expected/text");
       i++;
     }
 
@@ -548,5 +533,3 @@ class SimpleCodeViewModel extends ChangeNotifier {
     return true;
   }
 }
-
-

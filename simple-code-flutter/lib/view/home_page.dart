@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/view/output.dart';
+import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class HomePage extends StatefulWidget {
@@ -41,12 +41,10 @@ class _HomePageState extends State<HomePage> {
               if (snapshot.connectionState != ConnectionState.done) {
                 return const Center(child: CircularProgressIndicator());
               }
-              return const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 1, child: TaskForm()),
-                    Expanded(flex: 1, child: Output()),
-                  ]);
+              return const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(flex: 1, child: TaskForm()),
+                Expanded(flex: 1, child: Output()),
+              ]);
             }),
       ),
       drawer: Drawer(
@@ -79,12 +77,7 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () => showAboutDialog(
                     context: context,
                     applicationVersion: "1.0.0",
-                    children: [
-                      const Text("Курсовой проект"),
-                      const Text("студента 3 курса ВГУ"),
-                      const Text("Путина Павла Александровича")
-                    ]
-                ),
+                    children: [const Text("Курсовой проект"), const Text("студента 3 курса ВГУ"), const Text("Путина Павла Александровича")]),
                 child: const Text('О приложении'),
               ),
             ],
@@ -107,7 +100,6 @@ class _HomePageState extends State<HomePage> {
       _fileLoading = context.read<SimpleCodeViewModel>().openPolygonFile();
     });
   }
-
 
   void _importXmlFile() {
     setState(() {

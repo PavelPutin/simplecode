@@ -8,8 +8,7 @@ import 'package:xml/xpath.dart';
 
 void downloadFile(String fileName, String extension, String data) {
   final base64 = base64Encode(utf8.encode(data));
-  final anchor = html.AnchorElement(
-      href: 'data:application/octet-stream;base64,$base64');
+  final anchor = html.AnchorElement(href: 'data:application/octet-stream;base64,$base64');
   anchor.download = "$fileName.$extension";
   anchor.click();
   anchor.remove();

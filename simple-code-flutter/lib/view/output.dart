@@ -15,7 +15,6 @@ class _OutputState extends State<Output> {
   final TextEditingController _yamlController = TextEditingController();
   final TextEditingController _moodleXmlController = TextEditingController();
 
-
   @override
   void dispose() {
     super.dispose();
@@ -46,12 +45,8 @@ class _OutputState extends State<Output> {
 
     Widget errorBoxChild = const Center(child: Text("Нет ошибок"));
     if (errors.isNotEmpty) {
-      errorBoxChild = ListView.builder(
-          itemCount: errors.length,
-          itemBuilder: (context, index) => ListTile(
-              title: Text("${index + 1}) ${errors[index]}")
-          )
-      );
+      errorBoxChild =
+          ListView.builder(itemCount: errors.length, itemBuilder: (context, index) => ListTile(title: Text("${index + 1}) ${errors[index]}")));
     }
 
     return Column(
@@ -59,8 +54,7 @@ class _OutputState extends State<Output> {
         Row(
           children: [
             TextButton(onPressed: _showYamlOutput, child: const Text("yaml")),
-            TextButton(
-                onPressed: _showMoodleXMLOutput, child: const Text("MoodleXML")),
+            TextButton(onPressed: _showMoodleXMLOutput, child: const Text("MoodleXML")),
             const Spacer(),
             IconButton(onPressed: _download, icon: const Icon(Icons.download))
           ],
@@ -79,9 +73,7 @@ class _OutputState extends State<Output> {
                         Expanded(
                             child: SizedBox(
                           width: double.infinity,
-                          child: CodeTheme(
-                              data: CodeThemeData(styles: monokaiTheme),
-                              child: outputs[showingOutput]),
+                          child: CodeTheme(data: CodeThemeData(styles: monokaiTheme), child: outputs[showingOutput]),
                         )),
                       ],
                     ),
@@ -95,11 +87,9 @@ class _OutputState extends State<Output> {
             flex: 1,
             child: Card(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                  child: errorBoxChild,
-                )
-            )
-        )
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              child: errorBoxChild,
+            )))
       ],
     );
   }
