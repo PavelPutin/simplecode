@@ -12,4 +12,26 @@ enum AvailableLanguage {
   final String name;
   final String version;
   final String jobeLanguageId;
+
+  factory AvailableLanguage.fromJobeLanguageId(String languageId) {
+/*    languageId = languageId.toLowerCase();
+    return switch (languageId) {
+      "java" => AvailableLanguage.java,
+      "c" => AvailableLanguage.c,
+      "cpp" => AvailableLanguage.cpp,
+      "nodejs" => AvailableLanguage.nodejs,
+      "pascal" => AvailableLanguage.pascal,
+      "php" => AvailableLanguage.php,
+      "python3" => AvailableLanguage.python3,
+      String() => throw ArgumentError("Unknown language $languageId"),
+    };*/
+
+    try {
+      return values.firstWhere(
+            (lang) => lang.jobeLanguageId.toLowerCase() == languageId.toLowerCase(),
+      );
+    } catch (e) {
+      throw ArgumentError("Unknown language: $languageId");
+    }
+  }
 }

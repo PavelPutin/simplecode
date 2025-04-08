@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -357,41 +358,53 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   Future<void> openPolygonFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result != null) {
-      try {
-        final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
-        request.files.add(http.MultipartFile.fromBytes("package", result.files.first.bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: result.files.first!.name));
+    if (result == null) {
+      return;
+    }
+    try {
+      final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
+      request.files.add(http.MultipartFile.fromBytes(
+          "package",
+          result.files.first.bytes!.toList(),
+          contentType: MediaType("multipart", "form-data"),
+          filename: result.files.first.name)
+      );
 
-        var response = await request.send();
-        if (response.statusCode == 200) {
-          _errorMessages.add("Успех");
-        } else {
-          _errorMessages.add("Не удалось загрузить файл");
-          notifyListeners();
-          return;
-        }
-
-        _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
-
-        _task.name = "name";
-        _task.questionText = "questionText";
-        _task.defaultGrade = "1";
-        _task.answer = "answer";
-        _task.testGenerator["customCode"] = "testGenerator/customCode";
-        _task.testcases.clear();
-
-        _task.testcases.add(Testcase("stdin", "expected"));
-
-        _showingIndex = 1;
-        _updateYamlData();
-        _updateXmlData();
-        notifyListeners();
-      } catch (e) {
-        _errorMessages.add(e.toString());
-        _errorMessages.add("Не удалось загрузить файл вообще");
-        notifyListeners();
-        return;
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode != 200) {
+        throw HttpException('${response.statusCode}');
       }
+
+      var body = jsonDecode(const Utf8Decoder().convert(response.body.codeUnits)) as Map<String, dynamic>;
+
+      _errorMessages.clear();
+      _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
+
+      _task.name = body["problem"]["name"];
+      _task.questionText = body["problem"]["statement"];
+      _task.defaultGrade = "1";
+      _task.answer = body["problem"]["mainSolution"]["content"];
+      _answerLanguage = AvailableLanguage.fromJobeLanguageId(body["problem"]["mainSolution"]["language"] as String);
+      _task.testGenerator["customCode"] = "";
+
+      _task.testcases.clear();
+      var responseTestCases = body["problem"]["testCases"] as List<dynamic>;
+      for (Map<String, dynamic> testcase in responseTestCases) {
+        var stdin = testcase["stdin"];
+        var expected = testcase["expected"];
+        _task.testcases.add(Testcase(stdin, expected));
+      }
+
+      _showingIndex = 1;
+      _updateYamlData();
+      _updateXmlData();
+      notifyListeners();
+    } catch (e) {
+      _errorMessages.add(e.toString());
+      _errorMessages.add("Не удалось загрузить файл");
+      notifyListeners();
+      return;
     }
   }
 
