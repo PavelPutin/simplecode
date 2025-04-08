@@ -297,11 +297,11 @@ class _TaskFormState extends State<TaskForm> {
                           ...taskTestcases,
                           FilledButton(
                               style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.all(
+                                  backgroundColor: WidgetStateProperty.all(
                                       const Color(0xff0f6cbf)),
-                                  overlayColor: MaterialStateProperty.all(
+                                  overlayColor: WidgetStateProperty.all(
                                       const Color(0xff0c589c)),
-                                  shape: MaterialStateProperty.all(
+                                  shape: WidgetStateProperty.all(
                                     RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8.0),
                                     ),
@@ -319,7 +319,7 @@ class _TaskFormState extends State<TaskForm> {
                                       .read<SimpleCodeViewModel>()
                                       .task
                                       .testcases
-                                      .add(Testcase("", ""));
+                                      .add(Testcase("", "", true));
                                 });
                               },
                               child: const Text("Добавить тест"))

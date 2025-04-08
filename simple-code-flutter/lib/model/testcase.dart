@@ -6,8 +6,9 @@ part 'testcase.g.dart';
 class Testcase {
   String stdin;
   String expected;
+  bool show;
 
-  Testcase(this.stdin, this.expected);
+  Testcase(this.stdin, this.expected, this.show);
 
   factory Testcase.fromJson(Map<String, dynamic> json) => _$TestcaseFromJson(json);
 

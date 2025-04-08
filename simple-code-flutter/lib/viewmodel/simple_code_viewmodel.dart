@@ -18,7 +18,7 @@ import '../model/testcase.dart';
 
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
-  final Task _task = Task("", "", "", "", [Testcase("", "")], {});
+  final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
 
   Task get task => _task;
 
@@ -104,7 +104,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
       for (Map<String, dynamic> testcase in body["testcases"]) {
         var stdin = testcase["stdin"];
         var expected = testcase["expected"];
-        _generatedTests.add(Testcase(stdin, expected));
+        _generatedTests.add(Testcase(stdin, expected, true));
       }
 
       if (_generatedTests.isNotEmpty) {
@@ -343,7 +343,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
         for (YamlMap testcase in data["testcases"]) {
           _task.testcases.add(Testcase(testcase["stdin"].toString().trim(),
-              testcase["expected"].toString().trim()));
+              testcase["expected"].toString().trim(), true));
         }
         _showingIndex = 0;
         _updateXmlData();
@@ -393,7 +393,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
       for (Map<String, dynamic> testcase in responseTestCases) {
         var stdin = testcase["stdin"];
         var expected = testcase["expected"];
-        _task.testcases.add(Testcase(stdin, expected));
+        _task.testcases.add(Testcase(stdin, expected, true));
       }
 
       _showingIndex = 1;
@@ -492,7 +492,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
         for (XmlNode testcase in data.xpath("/quiz/question/testcases/testcase")) {
           _task.testcases.add(Testcase(
               testcase.xpath("stdin/text").first.innerText,
-              testcase.xpath("expected/text").first.innerText));
+              testcase.xpath("expected/text").first.innerText, true));
         }
         _showingIndex = 1;
         _updateYamlData();
