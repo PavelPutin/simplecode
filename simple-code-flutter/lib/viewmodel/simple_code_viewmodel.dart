@@ -85,6 +85,19 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   String get moodleXmlData => _moodleXmlData;
 
+  String? _activeImage = null;
+  String? _activeImageName = null;
+
+  set activeImageName(String? value) {
+    _activeImageName = value;
+    _activeImage = task.images[value];
+    notifyListeners();
+  }
+
+  String? get activeImageName => _activeImageName;
+
+  String? get activeImage => _activeImage;
+
   set moodleXmlData(String value) {
     _moodleXmlData = value;
     notifyListeners();
@@ -93,6 +106,18 @@ class SimpleCodeViewModel extends ChangeNotifier {
   void updateTestCaseShow(int number, bool value) {
     task.testcases[number].show = value;
     notifyListeners();
+    _updateYamlData();
+    _updateXmlData();
+  }
+
+  void deleteTestCaseImage(String name) {
+    if (name == activeImageName) {
+      activeImageName = null;
+    }
+    task.images.remove(name);
+    notifyListeners();
+    _updateYamlData();
+    _updateXmlData();
   }
 
   Future<void> generateTask() async {
@@ -548,5 +573,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
       return false;
     }
     return true;
+  }
+
+  void selectImage(String imageName) {
+    activeImageName = imageName;
   }
 }

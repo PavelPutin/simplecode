@@ -6,6 +6,7 @@ import 'package:re_highlight/languages/c.dart';
 import 'package:re_highlight/languages/java.dart';
 import 'package:re_highlight/languages/python.dart';
 import 'package:simple_code/model/testcase.dart';
+import 'package:simple_code/view/base64_image.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 import '../model/available_language.dart';
@@ -126,6 +127,19 @@ class _TaskFormState extends State<TaskForm> {
       ));
     }
 
+    List<Widget> taskImages = [];
+    for (String imageName in context.read<SimpleCodeViewModel>().task.images.keys) {
+      taskImages.add(InputChip(
+        label: Text(imageName),
+        onPressed: () {
+          context.read<SimpleCodeViewModel>().selectImage(imageName);
+        },
+        onDeleted: () {
+          context.read<SimpleCodeViewModel>().deleteTestCaseImage(imageName);
+        },
+      ));
+    }
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -160,6 +174,24 @@ class _TaskFormState extends State<TaskForm> {
                         },
                       ),
                     ),
+                    if (context.read<SimpleCodeViewModel>().task.images.isNotEmpty)
+                      Container(
+                          margin: const EdgeInsets.only(bottom: 30),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                child: Wrap(
+                                  alignment: WrapAlignment.start,
+                                  spacing: 5.0,
+                                  children: taskImages,
+                                ),
+                              ),
+                              if (context.read<SimpleCodeViewModel>().activeImage != null)
+                                Base64Image(base64String: context.read<SimpleCodeViewModel>().activeImage!)
+                            ],
+                          )),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
                       child: TextFormField(
