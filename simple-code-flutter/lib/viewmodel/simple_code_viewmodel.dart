@@ -96,11 +96,13 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   Future<void> generateTask() async {
+    var requestTask = _task.toJson();
+    requestTask.remove("images");
     Map<String, dynamic> request = {
       "answerLanguage": answerLanguage.jobeLanguageId,
       "testGeneratorLanguage": testGeneratorLanguage.jobeLanguageId,
       "generatedTestsAmount": generatedTestsAmount,
-      "task": _task.toJson()
+      "task": requestTask
     };
 
     final response = await http.post(Uri.parse("http://localhost:8080/runs"),
@@ -149,6 +151,11 @@ class SimpleCodeViewModel extends ChangeNotifier {
           builder.element("text", nest: () {
             builder.cdata(_task.questionText);
           });
+          for (MapEntry<String, String> image in _task.images.entries) {
+            builder.element("file", attributes: {"name": image.key, "path": "/", "encoding": "base64"}, nest: () {
+              builder.text(image.value);
+            });
+          }
         });
         builder.element("generalfeedback", attributes: {"format": "html"}, nest: () {
           builder.element("text");
@@ -254,7 +261,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
           for (var testcase in _task.testcases) {
             builder.element("testcase", nest: () {
               builder.attribute("testtype", "0");
-              builder.attribute("useasexample", "1");
+              builder.attribute("useasexample", testcase.show ? "1" : "0");
               builder.attribute("hiderestiffail", "0");
               builder.attribute("mark", "1.000000");
 
@@ -386,6 +393,10 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       _task.name = body["problem"]["name"];
       _task.questionText = body["problem"]["statement"];
+      var responseImages = body["problem"]["images"] as List<dynamic>;
+      for (var image in responseImages) {
+        _task.images[image["name"]] = image["base64Data"];
+      }
       _task.defaultGrade = "1";
       _task.answer = body["problem"]["mainSolution"]["content"];
       _answerLanguage = AvailableLanguage.fromJobeLanguageId(body["problem"]["mainSolution"]["language"] as String);

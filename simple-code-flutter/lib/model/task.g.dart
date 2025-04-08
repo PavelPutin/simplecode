@@ -15,7 +15,7 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
           .map((e) => Testcase.fromJson(e as Map<String, dynamic>))
           .toList(),
       json['testGenerator'] as Map<String, dynamic>,
-    );
+    )..images = Map<String, String>.from(json['images'] as Map);
 
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
       'name': instance.name,
@@ -24,4 +24,5 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
       'answer': instance.answer,
       'testcases': instance.testcases.map((e) => e.toJson()).toList(),
       'testGenerator': instance.testGenerator,
+      'images': instance.images,
     };

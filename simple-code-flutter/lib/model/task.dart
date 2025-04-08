@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:json_annotation/json_annotation.dart';
 import 'package:simple_code/model/testcase.dart';
 
@@ -11,6 +13,7 @@ class Task {
   String answer;
   List<Testcase> testcases;
   Map<String, dynamic> testGenerator;
+  Map<String, String> images = HashMap();
 
   Task(this.name, this.questionText, this.defaultGrade, this.answer, this.testcases, this.testGenerator);
 
