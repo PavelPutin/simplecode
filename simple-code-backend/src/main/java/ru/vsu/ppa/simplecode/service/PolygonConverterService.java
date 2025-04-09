@@ -129,11 +129,13 @@ public class PolygonConverterService {
         val generator = generators.get(generatorName);
         List<String> args = Arrays.asList(tokens).subList(1, tokens.length);
         List<String> compileArgs = List.of("-w");
-        val runSpec = new RunSpec(generator.language().getJobeNotation(),
-                                  generator.content(),
-                                  null,
-                                  List.of(testLibHeaderFile.asList()),
-                                  new RunSpec.Parameters(args, compileArgs));
+        val runSpec = RunSpec.builder()
+                .languageId(generator.language().getJobeNotation())
+                .sourceCode(generator.content())
+                .files(testLibHeaderFile)
+                .runArgs(args.toArray(new String[0]))
+                .compileArgs("-w")
+                .build();
         try {
             String result;
             try {
@@ -154,11 +156,13 @@ public class PolygonConverterService {
         if (testCase.getStdin() == null) {
             return null;
         }
-        val runSpec = new RunSpec(mainSolution.language().getJobeNotation(),
-                                  mainSolution.content(),
-                                  testCase.getStdin(),
-                                  List.of(testLibHeaderFile.asList()),
-                                  new RunSpec.Parameters(null, List.of("-w")));
+        val runSpec = RunSpec.builder()
+                .languageId(mainSolution.language().getJobeNotation())
+                .sourceCode(mainSolution.content())
+                .input(testCase.getStdin())
+                .files(testLibHeaderFile)
+                .compileArgs("-w")
+                .build();
         try {
             String result;
             try {

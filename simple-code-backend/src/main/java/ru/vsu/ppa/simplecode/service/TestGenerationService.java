@@ -22,20 +22,20 @@ public class TestGenerationService {
     private final JobeClientProperties jobeClientProperties;
     private final JobeInABoxService jobeInABoxService;
 
-    public GenerationResponse runs(TaskRun runSpec) {
+    public GenerationResponse runs(TaskRun taskRun) {
         GenerationResponse result = new GenerationResponse();
         try {
             // check answer
             List<String> errors = new ArrayList<>();
             int testNumber = 1;
-            for (var testcase : runSpec.getTask().getTestcases()) {
+            for (var testcase : taskRun.getTask().getTestcases()) {
                 try {
-                    val runSpeck = new RunSpec(runSpec.getAnswerLanguage(),
-                                               runSpec.getTask().getAnswer(),
-                                               testcase.getStdin(),
-                                               null,
-                                               null);
-                    var stdout = jobeInABoxService.submitRun(runSpeck);
+                    val runSpec = RunSpec.builder()
+                            .languageId(taskRun.getAnswerLanguage())
+                            .sourceCode(taskRun.getTask().getAnswer())
+                            .input(testcase.getStdin())
+                            .build();
+                    var stdout = jobeInABoxService.submitRun(runSpec);
                     if (!stdout.equals(testcase.getExpected())) {
                         String message = "Неправильный ответ%nОжидалось%n%s%nПолучено%n%s%n"
                                 .formatted(testcase.getExpected(), stdout);
@@ -59,23 +59,23 @@ public class TestGenerationService {
             if (errors.isEmpty()) {
                 List<String> history = new ArrayList<>();
                 int errorsInRow = 0;
-                int generatedTestsAmount = Integer.parseInt(runSpec.getGeneratedTestsAmount());
+                int generatedTestsAmount = Integer.parseInt(taskRun.getGeneratedTestsAmount());
                 for (int i = 0; i < generatedTestsAmount && errorsInRow < jobeClientProperties.maxErrorsInRow(); i++) {
                     try {
                         log.debug("History: {}", history.toString());
-                        val stdinGenerationRun = new RunSpec(runSpec.getTestGeneratorLanguage(),
-                                                             runSpec.getTask().getTestGenerator().getCustomCode(),
-                                                             history.toString(),
-                                                             null,
-                                                             null);
+                        val stdinGenerationRun = RunSpec.builder()
+                                .languageId(taskRun.getTestGeneratorLanguage())
+                                .sourceCode(taskRun.getTask().getTestGenerator().getCustomCode())
+                                .input(history.toString())
+                                .build();
                         var stdin = jobeInABoxService.submitRun(stdinGenerationRun);
                         history.add(stdin);
 
-                        val expectedGenerationRun = new RunSpec(runSpec.getAnswerLanguage(),
-                                                                runSpec.getTask().getAnswer(),
-                                                                stdin,
-                                                                null,
-                                                                null);
+                        val expectedGenerationRun = RunSpec.builder()
+                                .languageId(taskRun.getAnswerLanguage())
+                                .sourceCode(taskRun.getTask().getAnswer())
+                                .input(stdin)
+                                .build();
                         var expected = jobeInABoxService.submitRun(expectedGenerationRun);
                         testcases.add(new Testcase(stdin, expected));
                         errorsInRow = 0;
