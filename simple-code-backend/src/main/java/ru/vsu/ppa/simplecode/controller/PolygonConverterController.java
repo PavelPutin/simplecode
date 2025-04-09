@@ -19,9 +19,8 @@ public class PolygonConverterController {
     private final PolygonConverterService polygonConverterService;
 
     @PostMapping()
-    public ResponseEntity<PolygonToCodeRunnerConversionResult> convertPolygonPackageToProgrammingProblem(
+    public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(
             @RequestParam("package") MultipartFile polygonPackage) {
-        val task = polygonConverterService.convertPolygonPackageToProgrammingProblem(polygonPackage);
-        return ResponseEntity.ok(task);
+        return polygonConverterService.convertPolygonPackageToProgrammingProblem(polygonPackage);
     }
 }
