@@ -1,9 +1,5 @@
 package ru.vsu.ppa.simplecode.model;
 
-import lombok.Data;
+public record TestGenerator(String customCode) {
 
-@Data
-public class TestGenerator {
-
-    private String customCode;
 }

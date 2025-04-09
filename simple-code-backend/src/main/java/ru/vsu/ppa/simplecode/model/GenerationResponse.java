@@ -1,11 +1,7 @@
 package ru.vsu.ppa.simplecode.model;
 
 import java.util.List;
-import lombok.Data;
 
-@Data
-public class GenerationResponse {
+public record GenerationResponse(List<Testcase> testcases, List<String> errors) {
 
-    private List<Testcase> testcases;
-    private List<String> errors;
 }

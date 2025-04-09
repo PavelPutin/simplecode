@@ -22,7 +22,7 @@ public class TasksRpcController {
 
     @PostMapping("/runs")
     public GenerationResponse submitRun(@RequestBody TaskRun taskRun) {
-        if (Ints.tryParse(taskRun.getGeneratedTestsAmount()) == null) {
+        if (Ints.tryParse(taskRun.generatedTestsAmount()) == null) {
             throw new IllegalArgumentException("Количество тестов должно быть целым числом");
         }
         return testGenerationService.runs(taskRun);

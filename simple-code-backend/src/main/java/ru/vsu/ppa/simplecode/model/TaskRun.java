@@ -1,12 +1,5 @@
 package ru.vsu.ppa.simplecode.model;
 
-import lombok.Data;
+public record TaskRun(String answerLanguage, String testGeneratorLanguage, String generatedTestsAmount, Task task) {
 
-@Data
-public class TaskRun {
-
-    private final String answerLanguage;
-    private final String testGeneratorLanguage;
-    private final String generatedTestsAmount;
-    private final Task task;
 }

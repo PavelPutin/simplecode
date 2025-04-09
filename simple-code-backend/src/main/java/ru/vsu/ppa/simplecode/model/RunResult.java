@@ -1,14 +1,8 @@
 package ru.vsu.ppa.simplecode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 
-@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RunResult {
+public record RunResult(int outcome, String cmpinfo, String stdout, String stderr) {
 
-    private int outcome;
-    private String cmpinfo;
-    private String stdout;
-    private String stderr;
 }

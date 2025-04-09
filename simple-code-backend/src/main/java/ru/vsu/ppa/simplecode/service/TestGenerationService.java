@@ -23,16 +23,15 @@ public class TestGenerationService {
     private final JobeInABoxService jobeInABoxService;
 
     public GenerationResponse runs(TaskRun taskRun) {
-        GenerationResponse result = new GenerationResponse();
         try {
             // check answer
             List<String> errors = new ArrayList<>();
             int testNumber = 1;
-            for (var testcase : taskRun.getTask().getTestcases()) {
+            for (var testcase : taskRun.task().testcases()) {
                 try {
                     val runSpec = RunSpec.builder()
-                            .languageId(taskRun.getAnswerLanguage())
-                            .sourceCode(taskRun.getTask().getAnswer())
+                            .languageId(taskRun.answerLanguage())
+                            .sourceCode(taskRun.task().answer())
                             .input(testcase.getStdin())
                             .build();
                     var stdout = jobeInABoxService.submitRun(runSpec);
@@ -59,21 +58,21 @@ public class TestGenerationService {
             if (errors.isEmpty()) {
                 List<String> history = new ArrayList<>();
                 int errorsInRow = 0;
-                int generatedTestsAmount = Integer.parseInt(taskRun.getGeneratedTestsAmount());
+                int generatedTestsAmount = Integer.parseInt(taskRun.generatedTestsAmount());
                 for (int i = 0; i < generatedTestsAmount && errorsInRow < jobeClientProperties.maxErrorsInRow(); i++) {
                     try {
                         log.debug("History: {}", history.toString());
                         val stdinGenerationRun = RunSpec.builder()
-                                .languageId(taskRun.getTestGeneratorLanguage())
-                                .sourceCode(taskRun.getTask().getTestGenerator().getCustomCode())
+                                .languageId(taskRun.testGeneratorLanguage())
+                                .sourceCode(taskRun.task().testGenerator().customCode())
                                 .input(history.toString())
                                 .build();
                         var stdin = jobeInABoxService.submitRun(stdinGenerationRun);
                         history.add(stdin);
 
                         val expectedGenerationRun = RunSpec.builder()
-                                .languageId(taskRun.getAnswerLanguage())
-                                .sourceCode(taskRun.getTask().getAnswer())
+                                .languageId(taskRun.answerLanguage())
+                                .sourceCode(taskRun.task().answer())
                                 .input(stdin)
                                 .build();
                         var expected = jobeInABoxService.submitRun(expectedGenerationRun);
@@ -97,9 +96,7 @@ public class TestGenerationService {
                 }
             }
 
-            result.setTestcases(testcases);
-            result.setErrors(errors);
-            return result;
+            return new GenerationResponse(testcases, errors);
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }

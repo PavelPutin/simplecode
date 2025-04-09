@@ -42,13 +42,13 @@ public class JobeInABoxService {
             throw new RuntimeException("Empty response");
         }
 
-        val jobeResponse = JobeResponses.fromCode(runResult.getOutcome());
+        val jobeResponse = JobeResponses.fromCode(runResult.outcome());
         if (jobeResponse.equals(JobeResponses.OK)) {
-            return runResult.getStdout().stripTrailing();
+            return runResult.stdout().stripTrailing();
         }
 
         if (jobeResponse.equals(JobeResponses.COMPILATION_ERROR)) {
-            val e = new CompilationError("Ошибка компиляции: " + runResult.getCmpinfo());
+            val e = new CompilationError("Ошибка компиляции: " + runResult.cmpinfo());
             log.debug(e.getMessage());
             throw e;
         }
@@ -60,7 +60,7 @@ public class JobeInABoxService {
 
     private String getExceptionMessage(RunResult runResult, JobeResponses jobeResponse) {
         return switch (jobeResponse) {
-            case RUNTIME_ERROR -> "Ошибка выполнения: " + runResult.getStderr();
+            case RUNTIME_ERROR -> "Ошибка выполнения: " + runResult.stderr();
             case TIME_LIMIT_EXCEEDED -> "Превышено время ожидания";
             case MEMORY_LIMIT_EXCEEDED -> "Превышено ограничение по памяти";
             case ILLEGAL_SYSTEM_CALL -> "Запрещённый системный вызов";
