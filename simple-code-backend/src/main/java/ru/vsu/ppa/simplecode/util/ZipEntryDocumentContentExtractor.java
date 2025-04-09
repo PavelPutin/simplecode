@@ -18,7 +18,8 @@ public class ZipEntryDocumentContentExtractor extends ZipEntryContentExtractor<D
 
     public ZipEntryDocumentContentExtractor(ZipFile zip, DocumentBuilder xmlDocumentBuilder) {
         super(zip);
-        this.xmlDocumentBuilder = xmlDocumentBuilder;}
+        this.xmlDocumentBuilder = xmlDocumentBuilder;
+    }
 
     @Override
     protected Document getContent(InputStream is) throws IOException {

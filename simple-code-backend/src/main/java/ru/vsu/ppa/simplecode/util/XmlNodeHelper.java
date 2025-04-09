@@ -2,7 +2,6 @@ package ru.vsu.ppa.simplecode.util;
 
 import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.w3c.dom.Node;
@@ -68,7 +67,7 @@ public class XmlNodeHelper {
     /**
      * Evaluates an XPath expression and returns the value of a specified attribute as an Optional String.
      *
-     * @param path the XPath expression to evaluate
+     * @param path          the XPath expression to evaluate
      * @param attributeName the name of the attribute to retrieve the value of
      * @return an Optional containing the attribute value, or an empty Optional if the attribute is not found
      * @throws XPathExpressionException if the XPath expression is invalid
@@ -100,7 +99,9 @@ public class XmlNodeHelper {
      * @return an Optional containing the attribute value, or an empty Optional if the attribute is not found
      */
     public XmlValue<String> getAttributeValue(String attributeName) {
-        return XmlValue.ofAttribute(sourceNode.getAttributes().getNamedItem(attributeName), sourceNode.getNodeName(), attributeName)
+        return XmlValue.ofAttribute(
+                        sourceNode.getAttributes().getNamedItem(attributeName),
+                        sourceNode.getNodeName(), attributeName)
                 .map(Node::getNodeValue);
     }
 

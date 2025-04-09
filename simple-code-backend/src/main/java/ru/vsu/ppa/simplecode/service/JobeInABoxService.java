@@ -34,7 +34,9 @@ public class JobeInABoxService {
      * @throws JsonProcessingException if an error occurs during JSON processing
      */
     public String submitRun(RunSpec runSpec) throws ExecutionException, InterruptedException, JsonProcessingException {
-        val runResult = jobeRestClient.post().uri("/runs").contentType(MediaType.APPLICATION_JSON).body(runSpec).retrieve()
+        val runResult = jobeRestClient.post().uri("/runs").contentType(MediaType.APPLICATION_JSON)
+                .body(runSpec)
+                .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
                 .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler).body(RunResult.class);
 

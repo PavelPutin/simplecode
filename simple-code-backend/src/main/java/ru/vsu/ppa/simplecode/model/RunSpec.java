@@ -22,18 +22,25 @@ public record RunSpec(
             @JsonProperty("compileargs") List<String> compileArgs) {}
 
     public interface LanguageIdSetter {
+
         SourceCodeSetter languageId(String languageId);
     }
 
     public interface SourceCodeSetter {
+
         OptionalSetter sourceCode(String sourceCode);
     }
 
     public interface OptionalSetter {
+
         OptionalSetter input(String input);
+
         OptionalSetter files(JobeRunAssetFile... file);
+
         OptionalSetter runArgs(String... runArg);
+
         OptionalSetter compileArgs(String... compileArg);
+
         RunSpec build();
     }
 
