@@ -10,6 +10,7 @@ import 'package:simple_code/view/base64_image.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 import '../model/available_language.dart';
+import 'collapsible_widget.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({super.key});
@@ -271,32 +272,34 @@ class _TaskFormState extends State<TaskForm> {
                     ),
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Тестовые данные*"),
-                          ...taskTestcases,
-                          FilledButton(
-                              style: ButtonStyle(
-                                  backgroundColor: WidgetStateProperty.all(const Color(0xff0f6cbf)),
-                                  overlayColor: WidgetStateProperty.all(const Color(0xff0c589c)),
-                                  shape: WidgetStateProperty.all(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                  )),
-                              onPressed: () {
-                                setState(() {
-                                  testsNumber++;
-                                  testStdinControllers.add(TextEditingController());
-                                  testExpectedControllers.add(TextEditingController());
-                                  testEmpty.add(false);
-                                  //todo: move to viewmodel
-                                  context.read<SimpleCodeViewModel>().task.testcases.add(Testcase("", "", true));
-                                });
-                              },
-                              child: const Text("Добавить тест"))
-                        ],
+                      child: CollapsibleWidget(
+                        header: const Text("Тестовые данные*"),
+                        content: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...taskTestcases,
+                            FilledButton(
+                                style: ButtonStyle(
+                                    backgroundColor: WidgetStateProperty.all(const Color(0xff0f6cbf)),
+                                    overlayColor: WidgetStateProperty.all(const Color(0xff0c589c)),
+                                    shape: WidgetStateProperty.all(
+                                      RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                      ),
+                                    )),
+                                onPressed: () {
+                                  setState(() {
+                                    testsNumber++;
+                                    testStdinControllers.add(TextEditingController());
+                                    testExpectedControllers.add(TextEditingController());
+                                    testEmpty.add(false);
+                                    //todo: move to viewmodel
+                                    context.read<SimpleCodeViewModel>().task.testcases.add(Testcase("", "", true));
+                                  });
+                                },
+                                child: const Text("Добавить тест"))
+                          ],
+                        ),
                       ),
                     ),
                     Container(
