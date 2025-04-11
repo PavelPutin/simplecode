@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -68,10 +69,7 @@ public class PolygonConverterService {
 
         List<PolygonTestcase> testCases = polygonZipAccessObject.extractTestCases();
 
-        List<RunSpec> stdinGenerationErrors = new ArrayList<>();
-        List<RunSpec> expectedGenerationErrors = new ArrayList<>();
-
-        testCases.forEach(testCase -> {
+        testCases.parallelStream().forEach(testCase -> {
             log.debug("Test case: {}/{}",
                       testCase.getMetaInfo().testSetName(),
                       testCase.getMetaInfo().number() + 1);
@@ -81,7 +79,7 @@ public class PolygonConverterService {
                         .orElseGet(() -> generateStdin(testCase, generators));
                 testCase.setStdin(stdin);
             } catch (TestCaseGenerationException e) {
-                stdinGenerationErrors.add(e.getRunSpec());
+                testCase.setStdinGenerationError(e.getRunSpec());
                 testCase.setExpected(null);
             }
 
@@ -90,10 +88,19 @@ public class PolygonConverterService {
                         .orElseGet(() -> generateExpected(testCase, mainSolution));
                 testCase.setExpected(expected);
             } catch (TestCaseGenerationException e) {
-                expectedGenerationErrors.add(e.getRunSpec());
+                testCase.setExpectedGenerationError(e.getRunSpec());
                 testCase.setExpected(null);
             }
         });
+
+        List<RunSpec> stdinGenerationErrors = testCases.stream()
+                .map(PolygonTestcase::getStdinGenerationError)
+                .filter(Objects::nonNull)
+                .toList();
+        List<RunSpec> expectedGenerationErrors = testCases.stream()
+                .map(PolygonTestcase::getExpectedGenerationError)
+                .filter(Objects::nonNull)
+                .toList();
 
         log.debug("Test cases ({}):", testCases.size());
         testCases.forEach(testCase -> log.debug("Test case: {}", testCase));

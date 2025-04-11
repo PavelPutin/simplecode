@@ -2,6 +2,7 @@ package ru.vsu.ppa.simplecode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 @Getter
@@ -10,8 +11,16 @@ public class PolygonTestcase extends Testcase {
 
     @ToString.Exclude
     @JsonIgnore
-    public final TestCaseMetaInfo metaInfo;
-    public boolean display;
+    private final TestCaseMetaInfo metaInfo;
+    @ToString.Exclude
+    @JsonIgnore
+    @Setter
+    private RunSpec stdinGenerationError;
+    @ToString.Exclude
+    @JsonIgnore
+    @Setter
+    private RunSpec expectedGenerationError;
+    private final boolean display;
 
     public PolygonTestcase(TestCaseMetaInfo metaInfo) {
         super(null, null);
