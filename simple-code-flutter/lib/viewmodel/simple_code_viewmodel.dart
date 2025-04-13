@@ -418,6 +418,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
       _task.name = body["problem"]["name"];
       _task.questionText = body["problem"]["statement"];
+      _task.images.clear();
       var responseImages = body["problem"]["images"] as List<dynamic>;
       for (var image in responseImages) {
         _task.images[image["name"]] = image["base64Data"];
