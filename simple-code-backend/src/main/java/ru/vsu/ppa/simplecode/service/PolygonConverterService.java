@@ -3,12 +3,12 @@ package ru.vsu.ppa.simplecode.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
@@ -69,29 +69,33 @@ public class PolygonConverterService {
 
         List<PolygonTestcase> testCases = polygonZipAccessObject.extractTestCases();
 
-        testCases.parallelStream().forEach(testCase -> {
-            log.debug("Test case: {}/{}",
-                      testCase.getMetaInfo().testSetName(),
-                      testCase.getMetaInfo().number() + 1);
+        try (ForkJoinPool threadPool = new ForkJoinPool(8)) {
+            threadPool.execute(() -> {
+                testCases.parallelStream().forEach(testCase -> {
+                    log.debug("Test case: {}/{}",
+                              testCase.getMetaInfo().testSetName(),
+                              testCase.getMetaInfo().number() + 1);
 
-            try {
-                String stdin = polygonZipAccessObject.extractStdin(testCase)
-                        .orElseGet(() -> generateStdin(testCase, generators));
-                testCase.setStdin(stdin);
-            } catch (TestCaseGenerationException e) {
-                testCase.setStdinGenerationError(e.getRunSpec());
-                testCase.setExpected(null);
-            }
+                    try {
+                        String stdin = polygonZipAccessObject.extractStdin(testCase)
+                                .orElseGet(() -> generateStdin(testCase, generators));
+                        testCase.setStdin(stdin);
+                    } catch (TestCaseGenerationException e) {
+                        testCase.setStdinGenerationError(e.getRunSpec());
+                        testCase.setExpected(null);
+                    }
 
-            try {
-                String expected = polygonZipAccessObject.extractExpected(testCase)
-                        .orElseGet(() -> generateExpected(testCase, mainSolution));
-                testCase.setExpected(expected);
-            } catch (TestCaseGenerationException e) {
-                testCase.setExpectedGenerationError(e.getRunSpec());
-                testCase.setExpected(null);
-            }
-        });
+                    try {
+                        String expected = polygonZipAccessObject.extractExpected(testCase)
+                                .orElseGet(() -> generateExpected(testCase, mainSolution));
+                        testCase.setExpected(expected);
+                    } catch (TestCaseGenerationException e) {
+                        testCase.setExpectedGenerationError(e.getRunSpec());
+                        testCase.setExpected(null);
+                    }
+                });
+            });
+        }
 
         List<RunSpec> stdinGenerationErrors = testCases.stream()
                 .map(PolygonTestcase::getStdinGenerationError)
