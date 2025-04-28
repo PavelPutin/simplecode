@@ -43,13 +43,14 @@ dependencies:
   provider: ^6.1.2
   yaml: ^3.1.2
   xml: ^6.5.0
-  flutter_quill: ^9.3.11
+  flutter_quill: ^10.0.0
   quill_html_converter: ^9.3.11
-  re_editor: ^0.3.0
+  re_editor: ^0.7.0
   re_highlight: ^0.0.3
   http: ^1.2.1
   yaml_writer: ^2.0.0
   http_parser: any
+  html_editor_enhanced: ^2.6.0
 
 dev_dependencies:
   flutter_test:
@@ -60,7 +61,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
   build_runner: ^2.4.9
   json_serializable: ^6.8.0
 
