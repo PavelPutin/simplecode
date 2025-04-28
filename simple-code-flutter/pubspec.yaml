@@ -51,6 +51,7 @@ dependencies:
   yaml_writer: ^2.0.0
   http_parser: any
   html_editor_enhanced: ^2.6.0
+  pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:
   flutter_test:

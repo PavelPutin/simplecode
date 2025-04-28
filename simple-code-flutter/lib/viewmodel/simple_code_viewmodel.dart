@@ -22,6 +22,13 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   Task get task => _task;
 
+  set questionText(String? value) {
+    task.questionText = value ?? "";
+    _updateXmlData();
+    _updateYamlData();
+    notifyListeners();
+  }
+
   int _generatedTestsAmount = 1;
 
   int get generatedTestsAmount => _generatedTestsAmount;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/output.dart';
 import 'package:simple_code/view/task_form.dart';
@@ -47,40 +48,42 @@ class _HomePageState extends State<HomePage> {
               ]);
             }),
       ),
-      drawer: Drawer(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Container(
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: OutlinedButton(
-                  onPressed: _importYamlFile,
-                  child: const Text('Импортировать yaml файл'),
+      drawer: PointerInterceptor(
+        child: Drawer(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8.0),
+                  child: OutlinedButton(
+                    onPressed: _importYamlFile,
+                    child: const Text('Импортировать yaml файл'),
+                  ),
                 ),
-              ),
-              Container(
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: OutlinedButton(
-                  onPressed: _importPolygonFile,
-                  child: const Text('Импортировать Polygon-zip файл'),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8.0),
+                  child: OutlinedButton(
+                    onPressed: _importPolygonFile,
+                    child: const Text('Импортировать Polygon-zip файл'),
+                  ),
                 ),
-              ),
-              OutlinedButton(
-                onPressed: _importXmlFile,
-                child: const Text('Импортировать MoodleXml файл'),
-              ),
-              const Spacer(),
-              const Divider(),
-              OutlinedButton(
-                onPressed: () => showAboutDialog(
-                    context: context,
-                    applicationVersion: "1.0.0",
-                    children: [const Text("Курсовой проект"), const Text("студента 3 курса ВГУ"), const Text("Путина Павла Александровича")]),
-                child: const Text('О приложении'),
-              ),
-            ],
+                OutlinedButton(
+                  onPressed: _importXmlFile,
+                  child: const Text('Импортировать MoodleXml файл'),
+                ),
+                const Spacer(),
+                const Divider(),
+                OutlinedButton(
+                  onPressed: () => showAboutDialog(
+                      context: context,
+                      applicationVersion: "1.0.0",
+                      children: [const Text("Курсовой проект"), const Text("студента 3 курса ВГУ"), const Text("Путина Павла Александровича")]),
+                  child: const Text('О приложении'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

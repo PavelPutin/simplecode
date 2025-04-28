@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
+import 'package:html_editor_enhanced/html_editor.dart';
 import 'package:provider/provider.dart';
 import 'package:re_editor/re_editor.dart';
 import 'package:re_highlight/languages/c.dart';
@@ -25,7 +26,7 @@ class _TaskFormState extends State<TaskForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
 
-  final TextEditingController questionTextController = TextEditingController();
+  final HtmlEditorController  questionTextController = HtmlEditorController();
   bool questionTextEmpty = false;
   final TextEditingController gradeController = TextEditingController();
 
@@ -61,7 +62,6 @@ class _TaskFormState extends State<TaskForm> {
   void dispose() {
     super.dispose();
     nameController.dispose();
-    questionTextController.dispose();
     gradeController.dispose();
     answerController.dispose();
     answerLanguageController.dispose();
@@ -77,7 +77,6 @@ class _TaskFormState extends State<TaskForm> {
   Widget build(BuildContext context) {
     nameController.text = context.watch<SimpleCodeViewModel>().task.name;
     String question = context.watch<SimpleCodeViewModel>().task.questionText;
-    questionTextController.text = question;
 
     gradeController.text = context.watch<SimpleCodeViewModel>().task.defaultGrade;
     answerController.text = context.watch<SimpleCodeViewModel>().task.answer;
@@ -156,7 +155,7 @@ class _TaskFormState extends State<TaskForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(margin: const EdgeInsets.only(bottom: 30), child: NameTextField(nameController: nameController)),
-                    Container(
+/*                    Container(
                       margin: const EdgeInsets.only(bottom: 30),
                       child: TextFormField(
                         controller: questionTextController,
@@ -173,6 +172,23 @@ class _TaskFormState extends State<TaskForm> {
 
                           return null;
                         },
+                      ),
+                    ),*/
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 30),
+                      child: HtmlEditor(
+                        controller: questionTextController,
+                        htmlEditorOptions: HtmlEditorOptions(
+                          shouldEnsureVisible: true,
+                          initialText: context.watch<SimpleCodeViewModel>().task.questionText,
+                        ),
+                        otherOptions: const OtherOptions(height: 550),
+                        callbacks: Callbacks(
+                          onChangeContent: (String? value) {
+                            context.read<SimpleCodeViewModel>().questionText = value;
+                            print("changed");
+                          },
+                        ),
                       ),
                     ),
                     if (context.read<SimpleCodeViewModel>().task.images.isNotEmpty)
@@ -392,7 +408,7 @@ class _TaskFormState extends State<TaskForm> {
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                 )),
-                            onPressed: () {
+                            onPressed: ()  {
                               setState(() {
                                 questionTextEmpty = false;
                                 answerEmpty = false;
@@ -401,7 +417,7 @@ class _TaskFormState extends State<TaskForm> {
                               });
                               if (_formKey.currentState!.validate() && !answerController.isEmpty && !testGeneratorController.isEmpty) {
                                 context.read<SimpleCodeViewModel>().task.name = nameController.text;
-                                context.read<SimpleCodeViewModel>().task.questionText = questionTextController.text;
+                                // context.read<SimpleCodeViewModel>().task.questionText = questionTextController.getText();
                                 context.read<SimpleCodeViewModel>().task.defaultGrade = gradeController.text;
                                 context.read<SimpleCodeViewModel>().task.answer = answerController.text;
                                 context.read<SimpleCodeViewModel>().answerLanguage = selectedAnswerLanguage;
