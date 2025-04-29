@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
@@ -26,7 +28,7 @@ class _TaskFormState extends State<TaskForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
 
-  final HtmlEditorController  questionTextController = HtmlEditorController();
+  final HtmlEditorController questionTextController = HtmlEditorController();
   bool questionTextEmpty = false;
   final TextEditingController gradeController = TextEditingController();
 
@@ -180,14 +182,35 @@ class _TaskFormState extends State<TaskForm> {
                         controller: questionTextController,
                         htmlEditorOptions: HtmlEditorOptions(
                           shouldEnsureVisible: true,
-                          initialText: context.watch<SimpleCodeViewModel>().task.questionText,
+                          hint: "Условие",
+                          initialText: context.watch<SimpleCodeViewModel>().task.questionText ?? "",
+                          webInitialScripts: UnmodifiableListView([
+                            WebScript(script: """
+          var script = document.createElement('script');
+          script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
+          document.head.appendChild(script);
+          var script2 = document.createElement('script');
+          script2.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+          script2.async = true;
+          document.head.appendChild(script2);
+          """, name: "mathJax")
+                          ]),
                         ),
                         otherOptions: const OtherOptions(height: 550),
                         callbacks: Callbacks(
                           onChangeContent: (String? value) {
                             context.read<SimpleCodeViewModel>().questionText = value;
-                            print("changed");
+                            questionTextController.evaluateJavascriptWeb("mathJax");
                           },
+                          onInit: () {
+                            questionTextController.evaluateJavascriptWeb("mathJax");
+                            questionTextController.setFullScreen();
+                          },
+                          onFocus: () {
+                            // https://github.com/tneotia/html-editor-enhanced/issues/47#issuecomment-2364557453
+                            FocusScope.of(context).requestFocus(FocusNode());
+                            questionTextController.setFocus();
+                          }
                         ),
                       ),
                     ),
@@ -408,7 +431,7 @@ class _TaskFormState extends State<TaskForm> {
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                 )),
-                            onPressed: ()  {
+                            onPressed: () {
                               setState(() {
                                 questionTextEmpty = false;
                                 answerEmpty = false;
