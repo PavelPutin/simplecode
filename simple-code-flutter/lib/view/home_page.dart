@@ -78,8 +78,8 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton(
                   onPressed: () => showAboutDialog(
                       context: context,
-                      applicationVersion: "1.0.0",
-                      children: [const Text("Курсовой проект"), const Text("студента 3 курса ВГУ"), const Text("Путина Павла Александровича")]),
+                      applicationVersion: "1.1.0",
+                      children: [const Text("Курсовой проект"), const Text("студента 4 курса ВГУ"), const Text("Путина Павла Александровича")]),
                   child: const Text('О приложении'),
                 ),
               ],
