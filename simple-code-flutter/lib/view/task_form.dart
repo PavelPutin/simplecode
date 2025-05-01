@@ -1,7 +1,6 @@
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
+import 'package:flutter_tex/flutter_tex.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
 import 'package:provider/provider.dart';
 import 'package:re_editor/re_editor.dart';
@@ -188,34 +187,33 @@ class _TaskFormState extends State<TaskForm> {
                               TextButton(onPressed: _showPreview, child: const Text("Предпросмотр")),
                             ],
                           ),
-                          Builder(builder: (BuildContext context) {
-                            if (context.watch<SimpleCodeViewModel>().showingQuestionTextHtmlEditor) {
-                              return HtmlEditor(
-                                controller: questionTextController,
-                                htmlEditorOptions: HtmlEditorOptions(
-                                  shouldEnsureVisible: true,
-                                  hint: "Условие",
-                                  initialText: context.watch<SimpleCodeViewModel>().task.questionText,
-                                ),
-                                otherOptions: const OtherOptions(height: 550),
-                                callbacks: Callbacks(
-                                    onChangeContent: (String? value) {
-                                      context.read<SimpleCodeViewModel>().questionText = value;
-                                    },
-                                    onInit: () {
-                                      questionTextController.setFullScreen();
-                                    },
-                                    onFocus: () {
-                                      // https://github.com/tneotia/html-editor-enhanced/issues/47#issuecomment-2364557453
-                                      FocusScope.of(context).requestFocus(FocusNode());
-                                      questionTextController.setFocus();
-                                    }
-                                ),
-                              );
-                            }
-                            return const Text("Quetion text preview");
-                          },),
-
+                          Builder(
+                            builder: (BuildContext context) {
+                              if (context.watch<SimpleCodeViewModel>().showingQuestionTextHtmlEditor) {
+                                return HtmlEditor(
+                                  controller: questionTextController,
+                                  htmlEditorOptions: HtmlEditorOptions(
+                                    shouldEnsureVisible: true,
+                                    hint: "Условие",
+                                    initialText: context.watch<SimpleCodeViewModel>().task.questionText,
+                                  ),
+                                  otherOptions: const OtherOptions(height: 550),
+                                  callbacks: Callbacks(onChangeContent: (String? value) {
+                                    context.read<SimpleCodeViewModel>().questionText = value;
+                                  }, onInit: () {
+                                    questionTextController.setFullScreen();
+                                  }, onFocus: () {
+                                    // https://github.com/tneotia/html-editor-enhanced/issues/47#issuecomment-2364557453
+                                    FocusScope.of(context).requestFocus(FocusNode());
+                                    questionTextController.setFocus();
+                                  }),
+                                );
+                              }
+                              return TeXView(
+                                  child: TeXViewDocument(context.watch<SimpleCodeViewModel>().task.questionText,
+                                      style: const TeXViewStyle(height: 550)));
+                            },
+                          ),
                         ],
                       ),
                     ),

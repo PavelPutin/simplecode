@@ -1,10 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tex/flutter_tex.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/home_page.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
-void main() {
+void main() async  {
+
+  if (!kIsWeb) {
+    await TeXRenderingServer.start();
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -22,6 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Simple code',
       shortcuts: {
         LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
