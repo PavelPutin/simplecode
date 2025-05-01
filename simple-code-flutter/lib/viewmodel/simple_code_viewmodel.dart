@@ -193,7 +193,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
           builder.element("text");
         });
         builder.element("defaultgrade", nest: () {
-          builder.text(int.parse(_task.defaultGrade));
+          builder.text(int.parse(_task.defaultGrade != "" ? _task.defaultGrade : "1"));
         });
         builder.element("penalty", nest: () {
           builder.text(0);
