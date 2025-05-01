@@ -63,6 +63,22 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _showingQuestionTextHtmlEditor = true;
+
+  bool get showingQuestionTextHtmlEditor => _showingQuestionTextHtmlEditor;
+
+  set showingQuestionTextHtmlEditor(bool value) {
+    _showingQuestionTextHtmlEditor = value;
+    notifyListeners();
+  }
+
+  bool get showingQuestionTextPreview => !_showingQuestionTextHtmlEditor;
+
+  set showingQuestionTextPreview(bool value) {
+    _showingQuestionTextHtmlEditor = !value;
+    notifyListeners();
+  }
+
   final List<String> _errorMessages = [];
 
   UnmodifiableListView<String> get errorMessages => UnmodifiableListView(_errorMessages);

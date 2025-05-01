@@ -178,40 +178,45 @@ class _TaskFormState extends State<TaskForm> {
                     ),*/
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
-                      child: HtmlEditor(
-                        controller: questionTextController,
-                        htmlEditorOptions: HtmlEditorOptions(
-                          shouldEnsureVisible: true,
-                          hint: "Условие",
-                          initialText: context.watch<SimpleCodeViewModel>().task.questionText ?? "",
-                          webInitialScripts: UnmodifiableListView([
-                            WebScript(script: """
-          var script = document.createElement('script');
-          script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
-          document.head.appendChild(script);
-          var script2 = document.createElement('script');
-          script2.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
-          script2.async = true;
-          document.head.appendChild(script2);
-          """, name: "mathJax")
-                          ]),
-                        ),
-                        otherOptions: const OtherOptions(height: 550),
-                        callbacks: Callbacks(
-                          onChangeContent: (String? value) {
-                            context.read<SimpleCodeViewModel>().questionText = value;
-                            questionTextController.evaluateJavascriptWeb("mathJax");
-                          },
-                          onInit: () {
-                            questionTextController.evaluateJavascriptWeb("mathJax");
-                            questionTextController.setFullScreen();
-                          },
-                          onFocus: () {
-                            // https://github.com/tneotia/html-editor-enhanced/issues/47#issuecomment-2364557453
-                            FocusScope.of(context).requestFocus(FocusNode());
-                            questionTextController.setFocus();
-                          }
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Условие задачи*"),
+                          Row(
+                            children: [
+                              TextButton(onPressed: _showEditor, child: const Text("Редактор")),
+                              TextButton(onPressed: _showPreview, child: const Text("Предпросмотр")),
+                            ],
+                          ),
+                          Builder(builder: (BuildContext context) {
+                            if (context.watch<SimpleCodeViewModel>().showingQuestionTextHtmlEditor) {
+                              return HtmlEditor(
+                                controller: questionTextController,
+                                htmlEditorOptions: HtmlEditorOptions(
+                                  shouldEnsureVisible: true,
+                                  hint: "Условие",
+                                  initialText: context.watch<SimpleCodeViewModel>().task.questionText,
+                                ),
+                                otherOptions: const OtherOptions(height: 550),
+                                callbacks: Callbacks(
+                                    onChangeContent: (String? value) {
+                                      context.read<SimpleCodeViewModel>().questionText = value;
+                                    },
+                                    onInit: () {
+                                      questionTextController.setFullScreen();
+                                    },
+                                    onFocus: () {
+                                      // https://github.com/tneotia/html-editor-enhanced/issues/47#issuecomment-2364557453
+                                      FocusScope.of(context).requestFocus(FocusNode());
+                                      questionTextController.setFocus();
+                                    }
+                                ),
+                              );
+                            }
+                            return const Text("Quetion text preview");
+                          },),
+
+                        ],
                       ),
                     ),
                     if (context.read<SimpleCodeViewModel>().task.images.isNotEmpty)
@@ -499,6 +504,14 @@ class _TaskFormState extends State<TaskForm> {
         .textTheme
         .bodyMedium
         ?.copyWith(color: !predicateValue ? Theme.of(context).textTheme.bodyMedium?.color : Theme.of(context).colorScheme.error);
+  }
+
+  void _showEditor() {
+    setState(() => context.read<SimpleCodeViewModel>().showingQuestionTextHtmlEditor = true);
+  }
+
+  void _showPreview() {
+    setState(() => context.read<SimpleCodeViewModel>().showingQuestionTextPreview = true);
   }
 }
 
