@@ -21,7 +21,11 @@ public final class XmlValue<T> {
         return t;
     }
 
-    protected XmlValue(T value, String nodeName, String attributeName) {
+    private <U> XmlValue<U> emptyChain() {
+        return new XmlValue<>(null, nodeName, attributeName);
+    }
+
+    private XmlValue(T value, String nodeName, String attributeName) {
         this.value = value;
         this.nodeName = nodeName;
         this.attributeName = attributeName;
@@ -31,15 +35,13 @@ public final class XmlValue<T> {
         return ofAttribute(value, nodeName, attributeName);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> XmlValue<T> ofNode(T value, String nodeName) {
-        return value == null ? (XmlValue<T>) EMPTY
+        return value == null ? new XmlValue<>(null, nodeName, null)
                              : new XmlValue<>(value, nodeName, null);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> XmlValue<T> ofAttribute(T value, String nodeName, String attributeName) {
-        return value == null ? (XmlValue<T>) EMPTY
+        return value == null ? new XmlValue<>(null, nodeName, attributeName)
                              : new XmlValue<>(value, nodeName, attributeName);
     }
 
@@ -63,14 +65,14 @@ public final class XmlValue<T> {
         if (isEmpty()) {
             return this;
         } else {
-            return predicate.test(value) ? this : empty();
+            return predicate.test(value) ? this : emptyChain();
         }
     }
 
     public <U> XmlValue<U> map(Function<? super T, ? extends U> mapper) {
         Objects.requireNonNull(mapper);
         if (isEmpty()) {
-            return empty();
+            return emptyChain();
         } else {
             return XmlValue.of(mapper.apply(value), nodeName, attributeName);
         }
@@ -79,7 +81,7 @@ public final class XmlValue<T> {
     public <U> XmlValue<U> flatMap(Function<? super T, ? extends XmlValue<? extends U>> mapper) {
         Objects.requireNonNull(mapper);
         if (isEmpty()) {
-            return empty();
+            return emptyChain();
         } else {
             @SuppressWarnings("unchecked")
             XmlValue<U> r = (XmlValue<U>) mapper.apply(value);
