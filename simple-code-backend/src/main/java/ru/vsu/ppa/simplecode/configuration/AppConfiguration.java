@@ -75,16 +75,13 @@ public class AppConfiguration {
     }
 
     @Bean
-    public String base64TestLibHeaderFile(JobeRunAssetFile testLibHeaderFile) {
-        try (InputStream stream = new ClassPathResource(testLibHeaderFile.name()).getInputStream()) {
-            return new String(Base64.getEncoder().encode(stream.readAllBytes()));
+    public JobeRunAssetFile testLibHeaderFile() {
+        val testLibHeaderFileName = "testlib.h";
+        try (InputStream stream = new ClassPathResource(testLibHeaderFileName).getInputStream()) {
+            val value = new String(Base64.getEncoder().encode(stream.readAllBytes()));
+            return new JobeRunAssetFile("testlibheader", testLibHeaderFileName, true, value);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Bean
-    public JobeRunAssetFile testLibHeaderFile() {
-        return new JobeRunAssetFile("testlibheader", "testlib.h", true);
     }
 }

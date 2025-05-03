@@ -35,7 +35,6 @@ public class PolygonConverterService {
 
     private final PolygonZipAccessObjectProvider polygonZipAccessObjectProvider;
     private final JobeInABoxService jobeInABoxService;
-    private final String base64TestLibHeaderFile;
     private final JobeRunAssetFile testLibHeaderFile;
 
     /**
@@ -152,7 +151,7 @@ public class PolygonConverterService {
             try {
                 result = jobeInABoxService.submitRun(runSpec);
             } catch (JobeFileNotFoundException e) {
-                jobeInABoxService.putFile(testLibHeaderFile, base64TestLibHeaderFile);
+                jobeInABoxService.putFile(testLibHeaderFile);
                 log.debug("Put file (stdin generation) {}", testLibHeaderFile);
                 result = jobeInABoxService.submitRun(runSpec);
             }
@@ -179,7 +178,7 @@ public class PolygonConverterService {
             try {
                 result = jobeInABoxService.submitRun(runSpec);
             } catch (JobeFileNotFoundException e) {
-                jobeInABoxService.putFile(testLibHeaderFile, base64TestLibHeaderFile);
+                jobeInABoxService.putFile(testLibHeaderFile);
                 log.debug("Put file (expected generation) {}", testLibHeaderFile);
                 result = jobeInABoxService.submitRun(runSpec);
             }

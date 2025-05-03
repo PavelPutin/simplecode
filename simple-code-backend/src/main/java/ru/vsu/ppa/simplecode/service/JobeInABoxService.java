@@ -87,11 +87,11 @@ public class JobeInABoxService {
         throw new RuntimeException(message);
     }
 
-    public void putFile(JobeRunAssetFile file, String base64EncodedData) {
+    public void putFile(JobeRunAssetFile file) {
         jobeRestClient.put()
                 .uri("/files/{id}", Map.of("id", file.id()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("file_contents", base64EncodedData))
+                .body(Map.of("file_contents", file.value()))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
                 .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler)
