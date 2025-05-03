@@ -138,7 +138,6 @@ public class PolygonConverterService {
         val generatorName = tokens[0];
         val generator = generators.get(generatorName);
         List<String> args = Arrays.asList(tokens).subList(1, tokens.length);
-        List<String> compileArgs = List.of("-w");
         val runSpec = RunSpec.builder()
                 .languageId(generator.language().getJobeNotation())
                 .sourceCode(generator.content())
