@@ -62,11 +62,23 @@ public class PolygonZipAccessObject {
         this.metaInfo = extractTaskMetaInfo();
     }
 
+    /**
+     * Extracts a statement from a JSON file.
+     *
+     * @return The extracted statement.
+     * @throws JsonProcessingException If an error occurs while processing the JSON.
+     */
     public Statement extractStatement() throws JsonProcessingException {
         val json = stringExtractor.extract(metaInfo.statementPath().resolve("problem-properties.json"));
         return jacksonObjectMapper.readValue(json, Statement.class);
     }
 
+    /**
+     * Extracts images from a given statement.
+     *
+     * @param statement The statement from which to extract images.
+     * @return A list of StatementFile objects representing the extracted images.
+     */
     public List<StatementFile> extractImagesFromStatement(Statement statement) {
         return Stream.of(statement.legend(), statement.input(), statement.output(), statement.notes())
                 .map(this::extractImages)
@@ -74,11 +86,21 @@ public class PolygonZipAccessObject {
                 .toList();
     }
 
+    /**
+     * Extracts the main solution from the meta information.
+     *
+     * @return The extracted main solution as a ProgramSourceCode object.
+     */
     public ProgramSourceCode extractMainSolution() {
         return new ProgramSourceCode(stringExtractor.extract(metaInfo.mainSolution().path()),
                                      metaInfo.mainSolution().language());
     }
 
+    /**
+     * Extracts generators from the meta information.
+     *
+     * @return A map of generator names to their corresponding ProgramSourceCode objects.
+     */
     public Map<String, ProgramSourceCode> extractGenerators() {
         Map<String, ProgramSourceCode> generators = new HashMap<>();
         for (var generator : metaInfo.generators()) {
@@ -90,18 +112,38 @@ public class PolygonZipAccessObject {
         return generators;
     }
 
+    /**
+     * Extracts test cases from the meta information.
+     *
+     * @return A list of PolygonTestcase objects representing the extracted test cases.
+     */
     public List<PolygonTestcase> extractTestCases() {
         return metaInfo.testCases().stream().map(PolygonTestcase::new).toList();
     }
 
+    /**
+     * Extracts the name from the meta information.
+     *
+     * @return The extracted name as a String.
+     */
     public String extractName() {
         return metaInfo.name();
     }
 
+    /**
+     * Extracts the time limit from the meta information.
+     *
+     * @return The extracted time limit as an integer.
+     */
     public int extractTimeLimit() {
         return metaInfo.timeLimit();
     }
 
+    /**
+     * Extracts the memory limit from the meta information.
+     *
+     * @return The extracted memory limit in megabytes as a long.
+     */
     public long extractMemoryLimit() {
         return metaInfo.memoryLimit().toMegabytes();
     }
@@ -119,6 +161,12 @@ public class PolygonZipAccessObject {
         }).toList();
     }
 
+    /**
+     * Extracts the standard input from a given test case.
+     *
+     * @param testCase The test case from which to extract the standard input.
+     * @return An Optional containing the extracted standard input, or an empty Optional if the test case is incomplete.
+     */
     public Optional<String> extractStdin(PolygonTestcase testCase) {
         try {
             return Optional.of(stringExtractor.extract(testCase.getMetaInfo().stdinSource()).trim());
@@ -127,6 +175,12 @@ public class PolygonZipAccessObject {
         }
     }
 
+    /**
+     * Extracts the expected output from a given test case.
+     *
+     * @param testCase The test case from which to extract the expected output.
+     * @return An Optional containing the extracted expected output, or an empty Optional if the test case is incomplete.
+     */
     public Optional<String> extractExpected(PolygonTestcase testCase) {
         try {
             return Optional.of(stringExtractor.extract(testCase.getMetaInfo().expectedSource()).trim());
