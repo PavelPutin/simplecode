@@ -130,7 +130,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
       "task": requestTask
     };
 
-    final response = await http.post(Uri.parse("http://localhost:8080/runs"),
+    final response = await http.post(Uri.parse("http://localhost:8080/v1/runs"),
         headers: <String, String>{'Content-Type': 'application/json; charset=UTF-8'}, body: jsonEncode(request));
 
     if (response.statusCode == 200) {
