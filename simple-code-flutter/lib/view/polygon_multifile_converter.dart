@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-class PolygonMultifileConverter extends StatelessWidget {
+class PolygonMultiFileConverter extends StatelessWidget {
 
-  const PolygonMultifileConverter({super.key});
+  const PolygonMultiFileConverter({super.key});
 
   @override
   Widget build(BuildContext context) {

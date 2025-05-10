@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class FormHeader extends StatelessWidget {
   const FormHeader({super.key});
@@ -12,12 +14,12 @@ class FormHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             TextButton(
-              child: Text("Button 1"),
-              onPressed: () {},
+              child: const Text("Редактирование задачи"),
+              onPressed: () => context.read<SimpleCodeViewModel>().showingTaskForm = true,
             ),
             TextButton(
-              child: Text("Button 2"),
-              onPressed: () {},
+              child: const Text("Загрузка Polygon"),
+              onPressed: () => context.read<SimpleCodeViewModel>().showingMultiFileConverter = true,
             ),
           ]
         ),

@@ -126,6 +126,21 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _showingTaskForm = true;
+  bool get showingTaskForm => _showingTaskForm;
+
+  set showingTaskForm(bool value) {
+    _showingTaskForm = value;
+    notifyListeners();
+  }
+
+  bool get showingMultiFileConverter => !_showingTaskForm;
+
+  set showingMultiFileConverter(bool value) {
+    _showingTaskForm = !value;
+    notifyListeners();
+  }
+
   void updateTestCaseShow(int number, bool value) {
     task.testcases[number].show = value;
     notifyListeners();

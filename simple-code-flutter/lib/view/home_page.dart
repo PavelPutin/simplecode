@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/output.dart';
+import 'package:simple_code/view/polygon_multifile_converter.dart';
 import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
@@ -44,15 +45,18 @@ class _HomePageState extends State<HomePage> {
               if (snapshot.connectionState != ConnectionState.done) {
                 return const Center(child: CircularProgressIndicator());
               }
-              return const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(flex: 1, child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     mainAxisSize: MainAxisSize.max,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      FormHeader(),
-                      TaskForm(),
+                      const FormHeader(),
+                      if (context.watch<SimpleCodeViewModel>().showingTaskForm)
+                        const TaskForm(),
+                      if (context.watch<SimpleCodeViewModel>().showingMultiFileConverter)
+                        const PolygonMultiFileConverter(),
                     ],
                   ),
                 )),
