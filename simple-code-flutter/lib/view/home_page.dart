@@ -7,6 +7,8 @@ import 'package:simple_code/view/output.dart';
 import 'package:simple_code/view/task_form.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
+import 'form_header.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
 
@@ -43,7 +45,17 @@ class _HomePageState extends State<HomePage> {
                 return const Center(child: CircularProgressIndicator());
               }
               return const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(flex: 1, child: TaskForm()),
+                Expanded(flex: 1, child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.max,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FormHeader(),
+                      TaskForm(),
+                    ],
+                  ),
+                )),
                 Expanded(flex: 1, child: Output()),
               ]);
             }),
