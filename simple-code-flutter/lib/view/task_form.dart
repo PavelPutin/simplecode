@@ -156,31 +156,19 @@ class _TaskFormState extends State<TaskForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(margin: const EdgeInsets.only(bottom: 30), child: NameTextField(nameController: nameController)),
-/*                    Container(
-                      margin: const EdgeInsets.only(bottom: 30),
-                      child: TextFormField(
-                        controller: questionTextController,
-                        decoration:
-                            const InputDecoration(border: OutlineInputBorder(), labelText: "Условие задачи*", filled: true, fillColor: Colors.white),
-                        onChanged: (value) {
-                          context.read<SimpleCodeViewModel>().task.questionText = value;
-                        },
-                        maxLines: null,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return "Обязательное поле";
-                          }
-
-                          return null;
-                        },
-                      ),
-                    ),*/
                     Container(
                       margin: const EdgeInsets.only(bottom: 30),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Условие задачи*"),
+                          if (!questionTextEmpty)
+                            const Text("Условие задачи*"),
+                          if (questionTextEmpty)
+                            Text("Условие задачи*",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                          if (questionTextEmpty)
+                            Text("Обязательное поле",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                           Row(
                             children: [
                               TextButton(onPressed: _showEditor, child: const Text("Редактор")),
@@ -198,8 +186,10 @@ class _TaskFormState extends State<TaskForm> {
                                     initialText: context.watch<SimpleCodeViewModel>().task.questionText,
                                   ),
                                   otherOptions: const OtherOptions(height: 550),
-                                  callbacks: Callbacks(onChangeContent: (String? value) {
+                                  callbacks: Callbacks(onChangeContent: (String? value) async {
                                     context.read<SimpleCodeViewModel>().questionText = value;
+                                    var text = await questionTextController.getText();
+                                    questionTextEmpty = text.replaceAll("<br>", "").trim().isEmpty;
                                   }, onInit: () {
                                     questionTextController.setFullScreen();
                                   }, onFocus: () {
@@ -211,7 +201,7 @@ class _TaskFormState extends State<TaskForm> {
                               }
                               return TeXView(
                                   child: TeXViewDocument(context.watch<SimpleCodeViewModel>().task.questionText,
-                                      style: const TeXViewStyle(height: 550)));
+                                      style: const TeXViewStyle(height: 550, backgroundColor: Colors.white)));
                             },
                           ),
                         ],
@@ -441,9 +431,8 @@ class _TaskFormState extends State<TaskForm> {
                                 testGeneratorEmpty = false;
                                 testEmpty = List.filled(testsNumber, false, growable: true);
                               });
-                              if (_formKey.currentState!.validate() && !answerController.isEmpty && !testGeneratorController.isEmpty) {
+                              if (_formKey.currentState!.validate() && questionTextController.characterCount != 0 && !answerController.isEmpty && !testGeneratorController.isEmpty) {
                                 context.read<SimpleCodeViewModel>().task.name = nameController.text;
-                                // context.read<SimpleCodeViewModel>().task.questionText = questionTextController.getText();
                                 context.read<SimpleCodeViewModel>().task.defaultGrade = gradeController.text;
                                 context.read<SimpleCodeViewModel>().task.answer = answerController.text;
                                 context.read<SimpleCodeViewModel>().answerLanguage = selectedAnswerLanguage;
