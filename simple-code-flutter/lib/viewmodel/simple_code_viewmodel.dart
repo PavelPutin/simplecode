@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:xml/xpath.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
+import '../model/data_size.dart';
 import '../model/testcase.dart';
 import '../model/uploaded_file.dart';
 import '../model/utils.dart';
@@ -21,12 +23,20 @@ import '../model/utils.dart';
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
 
-  final List<UploadedFile> uploadedFiles = [];
+  final Set<UploadedFile> uploadedFiles = {};
 
   Future<void> uploadFile(DropzoneFileInterface file, DropzoneViewController controller) async {
-    final bytes = await controller.getFileData(file);
     final name = await controller.getFilename(file);
-    print(name);
+    final size = await controller.getFileSize(file);
+    final Uint8List? bytes;
+    if (size < UploadedFile.maxFileSize) {
+      bytes = await controller.getFileData(file);
+    } else {
+      bytes = null;
+    }
+    final uploadedFile = UploadedFile(name: name, sizeBytes: DataSize(size), value: bytes);
+    uploadedFiles.add(uploadedFile);
+    notifyListeners();
   }
 
   final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});

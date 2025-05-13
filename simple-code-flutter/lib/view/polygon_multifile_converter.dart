@@ -3,6 +3,8 @@ import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
+import '../model/uploaded_file.dart';
+
 class PolygonMultiFileConverter extends StatefulWidget {
   const PolygonMultiFileConverter({super.key});
 
@@ -16,45 +18,115 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-        child: SizedBox.fromSize(
-          size: Size(300, 300),
-          child: FutureBuilder(
-            future: uploading,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const CircularProgressIndicator();
-              }
-              return Stack(
-                children: [
-                  const SizedBox.expand(child: DropzoneDefaultField()),
-                  SizedBox.expand(
-                    child: DropzoneView(
-                      operation: DragOperation.copy,
-                      cursor: CursorType.grab,
-                      onCreated: (ctrl) => polygonMultiFileConverterController = ctrl,
-                      onLoaded: () => print("Loaded"),
-                      onDropFiles: (files) {
-                        if (files == null) {
-                          print("No files");
-                        }
-                        var uploadingFiles =
-                            files?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController)).toList() ??
-                                List.empty();
-                        setState(() {
-                          uploading = Future.wait(uploadingFiles);
-                        });
-                      },
-                    ),
-                  )
-                ],
-              );
-            }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            child: Text("Управление"),
           ),
         ),
-      ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            child: FutureBuilder(
+                future: uploading,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const CircularProgressIndicator();
+                  }
+
+                  final viewModel = context.watch<SimpleCodeViewModel>();
+
+                  Widget dropzoneList;
+                  if (viewModel.uploadedFiles.isEmpty) {
+                    dropzoneList = const Text("Нет загруженных файлов");
+                  } else {
+                    final uploadedFilesList = viewModel.uploadedFiles.toList();
+                    dropzoneList = Column(
+                      children: [
+                        Text("Загружено файлов: ${uploadedFilesList.length}"),
+                        ListView.builder(
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          itemCount: uploadedFilesList.length,
+                          itemBuilder: (context, index) => UploadedFileListTile(uploadedFilesList: uploadedFilesList, index: index),
+                        )
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      SizedBox.fromSize(
+                        size: const Size.fromHeight(200),
+                        child: Stack(
+                          children: [
+                            SizedBox.expand(
+                                child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.black26,
+                                      ),
+                                    ),
+                                    child: const DropzoneDefaultField())),
+                            SizedBox.expand(
+                              child: DropzoneView(
+                                operation: DragOperation.copy,
+                                onCreated: (ctrl) => polygonMultiFileConverterController = ctrl,
+                                onDropFiles: (files) {
+                                  if (files == null) {
+                                    print("No files");
+                                  }
+                                  var uploadingFiles = files
+                                          ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
+                                          .toList() ??
+                                      List.empty();
+                                  setState(() {
+                                    uploading = Future.wait(uploadingFiles);
+                                  });
+                                },
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                      dropzoneList
+                    ],
+                  );
+                }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class UploadedFileListTile extends StatelessWidget {
+  const UploadedFileListTile({
+    super.key,
+    required this.uploadedFilesList,
+    required this.index
+  });
+
+  final List<UploadedFile> uploadedFilesList;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final leading = uploadedFilesList[index].isValidSize
+        ? const Tooltip(message: "Успешно загружен", child: Icon(Icons.file_download_done))
+        : const Tooltip(message: "Слишком большой, максимальный размер 20 МиБ", child: Icon(Icons.error_outline, color: Colors.black26));
+
+    final color = uploadedFilesList[index].isValidSize ? Colors.transparent : Colors.grey;
+
+    return ListTile(
+      leading: leading,
+      title: Text(uploadedFilesList[index].name),
+      trailing: Text(uploadedFilesList[index].sizeBytes.toString()),
+      tileColor: color,
     );
   }
 }
@@ -66,12 +138,6 @@ class DropzoneDefaultField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.black26,
-          ),
-        ),
-        child: Container(alignment: Alignment.center, child: const Text("Загрузите файл", textAlign: TextAlign.center)));
+    return Container(alignment: Alignment.center, child: const Text("Загрузите файл", textAlign: TextAlign.center));
   }
 }
