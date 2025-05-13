@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:simple_code/model/available_language.dart';
@@ -14,10 +15,20 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
 import '../model/testcase.dart';
+import '../model/uploaded_file.dart';
 import '../model/utils.dart';
 
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
+
+  final List<UploadedFile> uploadedFiles = [];
+
+  Future<void> uploadFile(DropzoneFileInterface file, DropzoneViewController controller) async {
+    final bytes = await controller.getFileData(file);
+    final name = await controller.getFilename(file);
+    print(name);
+  }
+
   final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
 
   Task get task => _task;

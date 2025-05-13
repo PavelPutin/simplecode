@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -37,4 +38,14 @@ bool xmlContainsAll(XmlNode xml, List<String> xpathList) {
     }
   }
   return true;
+}
+
+String formatBytes(int bytes) {
+  const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (bytes == 0) return '0 B';
+
+  int i = (log(bytes) / log(1024)).floor();
+  double size = bytes / pow(1024, i);
+
+  return '${size.toStringAsFixed(2)} ${suffixes[i]}';
 }
