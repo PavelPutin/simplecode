@@ -9,6 +9,7 @@ import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:simple_code/model/available_language.dart';
+import 'package:simple_code/model/convertation_result.dart';
 import 'package:simple_code/model/task.dart';
 import 'package:xml/xml.dart';
 import 'package:xml/xpath.dart';
@@ -42,6 +43,13 @@ class SimpleCodeViewModel extends ChangeNotifier {
   final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
 
   Task get task => _task;
+  set task(Task value) {
+    _task.name = value.name;
+    _task.questionText = value.questionText;
+    _task.answer = value.answer;
+    _task.testcases = value.testcases;
+    _task.testGenerator = value.testGenerator;
+  }
 
   set questionText(String? value) {
     task.questionText = value ?? "";
@@ -148,6 +156,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   bool _showingTaskForm = true;
+
   bool get showingTaskForm => _showingTaskForm;
 
   set showingTaskForm(bool value) {
@@ -460,42 +469,13 @@ class SimpleCodeViewModel extends ChangeNotifier {
       return;
     }
     try {
-      final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
-      request.files.add(http.MultipartFile.fromBytes("package", result.files.first.bytes!.toList(),
-          contentType: MediaType("multipart", "form-data"), filename: result.files.first.name));
+      var converted = await convertPolygonFile(result.files.first.name, result.files.first.bytes);
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode != 200) {
-        throw HttpException('${response.statusCode}');
-      }
-
-      var body = jsonDecode(const Utf8Decoder().convert(response.body.codeUnits)) as Map<String, dynamic>;
+      task = converted.task;
+      _answerLanguage = converted.answerLanguage;
 
       _errorMessages.clear();
       _fileNameWithoutExtension = getFileNameWithoutExtension(result.files.first);
-
-      _task.name = body["problem"]["name"];
-      _task.questionText = body["problem"]["statement"];
-      _task.images.clear();
-      var responseImages = body["problem"]["images"] as List<dynamic>;
-      for (var image in responseImages) {
-        _task.images[image["name"]] = image["base64Data"];
-      }
-      _task.defaultGrade = "1";
-      _task.answer = body["problem"]["mainSolution"]["content"];
-      _answerLanguage = AvailableLanguage.fromJobeLanguageId(body["problem"]["mainSolution"]["language"] as String);
-      _task.testGenerator["customCode"] = "";
-
-      _task.testcases.clear();
-      var responseTestCases = body["problem"]["testCases"] as List<dynamic>;
-      for (Map<String, dynamic> testcase in responseTestCases) {
-        var stdin = testcase["stdin"];
-        var expected = testcase["expected"];
-        var show = testcase["display"];
-        _task.testcases.add(Testcase(stdin, expected, show));
-      }
-
       _showingIndex = 1;
       _updateYamlData();
       _updateXmlData();
@@ -506,6 +486,42 @@ class SimpleCodeViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
+  }
+
+  Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
+    final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
+    request.files.add(http.MultipartFile.fromBytes("package", bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: fileName));
+
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) {
+      throw HttpException('${response.statusCode}');
+    }
+
+    var body = jsonDecode(const Utf8Decoder().convert(response.body.codeUnits)) as Map<String, dynamic>;
+
+    String name = body["problem"]["name"];
+    String questionText = body["problem"]["statement"];
+    Map<String, String> images = {};
+    var responseImages = body["problem"]["images"] as List<dynamic>;
+    for (var image in responseImages) {
+      images[image["name"]] = image["base64Data"];
+    }
+    String defaultGrade = "1";
+    String answer = body["problem"]["mainSolution"]["content"];
+    AvailableLanguage answerLanguage = AvailableLanguage.fromJobeLanguageId(body["problem"]["mainSolution"]["language"] as String);
+
+    List<Testcase> testcases = [];
+    var responseTestCases = body["problem"]["testCases"] as List<dynamic>;
+    for (Map<String, dynamic> testcase in responseTestCases) {
+      var stdin = testcase["stdin"];
+      var expected = testcase["expected"];
+      var show = testcase["display"];
+      testcases.add(Testcase(stdin, expected, show));
+    }
+
+    var task = Task(name, questionText, defaultGrade, answer, testcases, {"customCode": ""});
+    return ConvertationResult(task, answerLanguage);
   }
 
   Future<void> downloadYamlFile() async {
