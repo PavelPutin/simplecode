@@ -15,6 +15,7 @@ class PolygonMultiFileConverter extends StatefulWidget {
 class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
   late DropzoneViewController polygonMultiFileConverterController;
   Future<void> uploading = Future.delayed(Duration.zero);
+  Future<void> converting = Future.delayed(Duration.zero);
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +26,28 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
         Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: OutlinedButton(
-                onPressed: () {
-                  print("Hello");
-                },
-                child: const Text("Конвертировать")
-            ),
+            child: FutureBuilder(
+                future: converting,
+                builder: (context, snapshot) {
+                  var loading = snapshot.connectionState != ConnectionState.done;
+
+                  return OutlinedButton(
+                      onPressed: () async {
+                        if (loading) return;
+
+                        setState(() {
+                          converting = context.read<SimpleCodeViewModel>().convertUploadedFiles();
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          if (loading)
+                            const CircularProgressIndicator(),
+                          const Text("Конвертировать"),
+                        ],
+                      )
+                  );
+                }),
           ),
         ),
         Card(
@@ -86,8 +103,8 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                                     print("No files");
                                   }
                                   var uploadingFiles = files
-                                          ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
-                                          .toList() ??
+                                      ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
+                                      .toList() ??
                                       List.empty();
                                   setState(() {
                                     uploading = Future.wait(uploadingFiles);
@@ -110,11 +127,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
 }
 
 class UploadedFileListTile extends StatelessWidget {
-  const UploadedFileListTile({
-    super.key,
-    required this.uploadedFilesList,
-    required this.index
-  });
+  const UploadedFileListTile({super.key, required this.uploadedFilesList, required this.index});
 
   final List<UploadedFile> uploadedFilesList;
   final int index;

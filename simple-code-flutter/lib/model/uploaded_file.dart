@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:simple_code/model/convertation_result.dart';
 import 'package:simple_code/model/task.dart';
 
 import 'data_size.dart';
@@ -9,7 +10,8 @@ class UploadedFile {
   String name;
   DataSize sizeBytes;
   Uint8List? value;
-  Task? _task;
+  Future<ConvertationResult?> _converting = Future.delayed(Duration.zero);
+  ConvertationResult? _task;
 
   UploadedFile({
     required this.name,
@@ -19,11 +21,17 @@ class UploadedFile {
 
   bool get isValidSize => sizeBytes.value < maxFileSize;
 
-  set task(Task? value) {
-    task = value;
+  set task(ConvertationResult? value) {
+    _task = value;
   }
 
-  Task? get task => _task;
+  Future<ConvertationResult?> get converting => _converting;
+
+  set converting(Future<ConvertationResult?> value) {
+    _converting = value;
+  }
+
+  ConvertationResult? get task => _task;
 
   @override
   bool operator ==(Object other) =>

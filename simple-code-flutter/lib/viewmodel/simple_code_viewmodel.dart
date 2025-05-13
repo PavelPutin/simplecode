@@ -488,6 +488,16 @@ class SimpleCodeViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> convertUploadedFiles() async {
+    var list = uploadedFiles.toList();
+    for (var (i, file) in uploadedFiles.indexed.where((v) => v.$2.isValidSize)) {
+      list[i].converting = convertPolygonFile(file.name, file.value);
+      var result = await list[i].converting;
+      file.task = result;
+      notifyListeners();
+    }
+  }
+
   Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
     final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
     request.files.add(http.MultipartFile.fromBytes("package", bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: fileName));
