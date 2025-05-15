@@ -236,11 +236,10 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void _updateXmlData() {
-    XmlDocument document = createXmlDocument(_task, _generatedTests);
-    _moodleXmlData = document.toXmlString(pretty: true, indent: "    ");
+    moodleXmlData = createXmlDocument(_task, _generatedTests);
   }
 
-  XmlDocument createXmlDocument(Task sourceTask, List<Testcase> sourceGeneratedTests) {
+  String createXmlDocument(Task sourceTask, List<Testcase> sourceGeneratedTests) {
     final builder = XmlBuilder();
     builder.processing("xml", "version=\"1.0\"");
     builder.element("quiz", nest: () {
@@ -427,7 +426,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
     });
 
     final document = builder.buildDocument();
-    return document;
+    return document.toXmlString(pretty: true, indent: "    ");
   }
 
   /// throws

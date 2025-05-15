@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
+import 'package:simple_code/model/utils.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
 class PolygonMultiFileConverter extends StatefulWidget {
@@ -148,7 +149,13 @@ class UploadedFileListTile extends StatelessWidget {
               text: TextSpan(
                 text: "XML",
                 style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()..onTap = () => print("XML"),
+                recognizer: TapGestureRecognizer()..onTap = () {
+                  var fileName = viewModel.uploadedFiles[index].name;
+                  fileName = getFileNameWithoutExtensionFromString(fileName);
+                  var sourceTask = viewModel.uploadedFiles[index].task!.task;
+                  var data = context.read<SimpleCodeViewModel>().createXmlDocument(sourceTask, []);
+                  downloadFile(fileName, "xml", data);
+                },
               )
           ),
           RichText(

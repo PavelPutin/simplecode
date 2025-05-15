@@ -25,6 +25,14 @@ String getFileNameWithoutExtension(PlatformFile file) {
   return fileName;
 }
 
+String getFileNameWithoutExtensionFromString(String fileName) {
+  int index = fileName.lastIndexOf(RegExp("."));
+  if (index != -1) {
+    fileName = fileName.replaceFirst(RegExp("."), "", index);
+  }
+  return fileName;
+}
+
 String readAsString(PlatformFile file) {
   Uint8List fileBytes = file.bytes!;
   return utf8.decode(fileBytes);
