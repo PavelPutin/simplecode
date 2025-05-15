@@ -1,9 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
-
-import '../model/uploaded_file.dart';
 
 class PolygonMultiFileConverter extends StatefulWidget {
   const PolygonMultiFileConverter({super.key});
@@ -41,12 +41,10 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                       },
                       child: Row(
                         children: [
-                          if (loading)
-                            const CircularProgressIndicator(),
+                          if (loading) const CircularProgressIndicator(),
                           const Text("Конвертировать"),
                         ],
-                      )
-                  );
+                      ));
                 }),
           ),
         ),
@@ -102,8 +100,8 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                                     print("No files");
                                   }
                                   var uploadingFiles = files
-                                      ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
-                                      .toList() ??
+                                          ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
+                                          .toList() ??
                                       List.empty();
                                   setState(() {
                                     uploading = Future.wait(uploadingFiles);
@@ -141,22 +139,45 @@ class UploadedFileListTile extends StatelessWidget {
       leading = const Tooltip(message: "Файл конвертирован", child: Icon(Icons.check_circle, color: Colors.green));
     }
 
+    Widget? subtitle;
+    if (viewModel.uploadedFiles[index].isConverted) {
+      subtitle = Row(
+        spacing: 10,
+        children: [
+          RichText(
+              text: TextSpan(
+                text: "XML",
+                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                recognizer: TapGestureRecognizer()..onTap = () => print("XML"),
+              )
+          ),
+          RichText(
+              text: TextSpan(
+                text: "YAML",
+                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                recognizer: TapGestureRecognizer()..onTap = () => print("YAML"),
+              )
+          ),
+        ],
+      );
+    }
+
     final color = viewModel.uploadedFiles[index].isValidSize ? Colors.transparent : Colors.grey;
 
     return FutureBuilder(
-      future: viewModel.uploadedFiles[index].converting,
-      builder: (context, snapshot) {
-        if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
-          leading = const CircularProgressIndicator();
-        }
-        return ListTile(
-          leading: leading,
-          title: Text(viewModel.uploadedFiles[index].name),
-          trailing: Text(viewModel.uploadedFiles[index].sizeBytes.toString()),
-          tileColor: color,
-        );
-      }
-    );
+        future: viewModel.uploadedFiles[index].converting,
+        builder: (context, snapshot) {
+          if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
+            leading = const CircularProgressIndicator();
+          }
+          return ListTile(
+            leading: leading,
+            title: Text(viewModel.uploadedFiles[index].name),
+            subtitle: subtitle,
+            trailing: Text(viewModel.uploadedFiles[index].sizeBytes.toString()),
+            tileColor: color,
+          );
+        });
   }
 }
 

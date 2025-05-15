@@ -236,20 +236,25 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void _updateXmlData() {
+    XmlDocument document = createXmlDocument(_task, _generatedTests);
+    _moodleXmlData = document.toXmlString(pretty: true, indent: "    ");
+  }
+
+  XmlDocument createXmlDocument(Task sourceTask, List<Testcase> sourceGeneratedTests) {
     final builder = XmlBuilder();
     builder.processing("xml", "version=\"1.0\"");
     builder.element("quiz", nest: () {
       builder.element("question", attributes: {"type": "coderunner"}, nest: () {
         builder.element("name", nest: () {
           builder.element("text", nest: () {
-            builder.text(_task.name);
+            builder.text(sourceTask.name);
           });
         });
         builder.element("questiontext", attributes: {"format": "html"}, nest: () {
           builder.element("text", nest: () {
-            builder.cdata(_task.questionText);
+            builder.cdata(sourceTask.questionText);
           });
-          for (MapEntry<String, String> image in _task.images.entries) {
+          for (MapEntry<String, String> image in sourceTask.images.entries) {
             builder.element("file", attributes: {"name": image.key, "path": "/", "encoding": "base64"}, nest: () {
               builder.text(image.value);
             });
@@ -259,7 +264,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
           builder.element("text");
         });
         builder.element("defaultgrade", nest: () {
-          builder.text(int.parse(_task.defaultGrade != "" ? _task.defaultGrade : "1"));
+          builder.text(int.parse(sourceTask.defaultGrade != "" ? sourceTask.defaultGrade : "1"));
         });
         builder.element("penalty", nest: () {
           builder.text(0);
@@ -303,7 +308,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
         builder.element("iscombinatortemplate");
         builder.element("allowmultiplestdins");
         builder.element("answer", nest: () {
-          builder.cdata(_task.answer);
+          builder.cdata(sourceTask.answer);
         });
         builder.element("validateonsave", nest: () {
           builder.text(1);
@@ -356,7 +361,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
         });
         builder.element("prototypeextra");
         builder.element("testcases", nest: () {
-          for (var testcase in _task.testcases) {
+          for (var testcase in sourceTask.testcases) {
             builder.element("testcase", nest: () {
               builder.attribute("testtype", "0");
               builder.attribute("useasexample", testcase.show ? "1" : "0");
@@ -387,7 +392,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
             });
           }
 
-          for (var testcase in _generatedTests) {
+          for (var testcase in sourceGeneratedTests) {
             builder.element("testcase", nest: () {
               builder.attribute("testtype", "0");
               builder.attribute("useasexample", "0");
@@ -422,7 +427,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
     });
 
     final document = builder.buildDocument();
-    _moodleXmlData = document.toXmlString(pretty: true, indent: "    ");
+    return document;
   }
 
   /// throws
