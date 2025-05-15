@@ -231,8 +231,12 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void _updateYamlData() {
+    _yamlData = createYamlDocument(_task);
+  }
+
+  String createYamlDocument(Task task) {
     var writer = YamlWriter();
-    _yamlData = writer.write(_task);
+    return writer.write(task);
   }
 
   void _updateXmlData() {

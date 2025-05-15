@@ -26,9 +26,9 @@ String getFileNameWithoutExtension(PlatformFile file) {
 }
 
 String getFileNameWithoutExtensionFromString(String fileName) {
-  int index = fileName.lastIndexOf(RegExp("."));
+  int index = fileName.lastIndexOf(".");
   if (index != -1) {
-    fileName = fileName.replaceFirst(RegExp("."), "", index);
+    fileName = fileName.substring(0, index);
   }
   return fileName;
 }
