@@ -66,15 +66,14 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                   if (viewModel.uploadedFiles.isEmpty) {
                     dropzoneList = const Text("Нет загруженных файлов");
                   } else {
-                    final uploadedFilesList = viewModel.uploadedFiles.toList();
                     dropzoneList = Column(
                       children: [
-                        Text("Загружено файлов: ${uploadedFilesList.length}"),
+                        Text("Загружено файлов: ${viewModel.uploadedFiles.length}"),
                         ListView.builder(
                           scrollDirection: Axis.vertical,
                           shrinkWrap: true,
-                          itemCount: uploadedFilesList.length,
-                          itemBuilder: (context, index) => UploadedFileListTile(uploadedFilesList: uploadedFilesList, index: index),
+                          itemCount: viewModel.uploadedFiles.length,
+                          itemBuilder: (context, index) => UploadedFileListTile(index: index),
                         )
                       ],
                     );
@@ -127,24 +126,36 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
 }
 
 class UploadedFileListTile extends StatelessWidget {
-  const UploadedFileListTile({super.key, required this.uploadedFilesList, required this.index});
+  const UploadedFileListTile({super.key, required this.index});
 
-  final List<UploadedFile> uploadedFilesList;
   final int index;
 
   @override
   Widget build(BuildContext context) {
-    final leading = uploadedFilesList[index].isValidSize
+    final viewModel = context.watch<SimpleCodeViewModel>();
+    Widget leading = viewModel.uploadedFiles[index].isValidSize
         ? const Tooltip(message: "Успешно загружен", child: Icon(Icons.file_download_done))
         : const Tooltip(message: "Слишком большой, максимальный размер 20 МиБ", child: Icon(Icons.error_outline, color: Colors.black26));
 
-    final color = uploadedFilesList[index].isValidSize ? Colors.transparent : Colors.grey;
+    if (viewModel.uploadedFiles[index].isConverted) {
+      leading = const Tooltip(message: "Файл конвертирован", child: Icon(Icons.check_circle, color: Colors.green));
+    }
 
-    return ListTile(
-      leading: leading,
-      title: Text(uploadedFilesList[index].name),
-      trailing: Text(uploadedFilesList[index].sizeBytes.toString()),
-      tileColor: color,
+    final color = viewModel.uploadedFiles[index].isValidSize ? Colors.transparent : Colors.grey;
+
+    return FutureBuilder(
+      future: viewModel.uploadedFiles[index].converting,
+      builder: (context, snapshot) {
+        if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
+          leading = const CircularProgressIndicator();
+        }
+        return ListTile(
+          leading: leading,
+          title: Text(viewModel.uploadedFiles[index].name),
+          trailing: Text(viewModel.uploadedFiles[index].sizeBytes.toString()),
+          tileColor: color,
+        );
+      }
     );
   }
 }

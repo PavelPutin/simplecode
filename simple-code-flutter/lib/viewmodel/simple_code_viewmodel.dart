@@ -24,18 +24,22 @@ import '../model/utils.dart';
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
 
-  final Set<UploadedFile> uploadedFiles = {};
+  final List<UploadedFile> uploadedFiles = [];
 
   Future<void> uploadFile(DropzoneFileInterface file, DropzoneViewController controller) async {
     final name = await controller.getFilename(file);
     final size = await controller.getFileSize(file);
+    final uploadedFile = UploadedFile(name: name, sizeBytes: DataSize(size));
+    if (uploadedFiles.contains(uploadedFile)) {
+      return;
+    }
     final Uint8List? bytes;
     if (size < UploadedFile.maxFileSize) {
       bytes = await controller.getFileData(file);
     } else {
       bytes = null;
     }
-    final uploadedFile = UploadedFile(name: name, sizeBytes: DataSize(size), value: bytes);
+    uploadedFile.value = bytes;
     uploadedFiles.add(uploadedFile);
     notifyListeners();
   }
@@ -43,6 +47,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
   final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
 
   Task get task => _task;
+
   set task(Task value) {
     _task.name = value.name;
     _task.questionText = value.questionText;
@@ -489,10 +494,11 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   Future<void> convertUploadedFiles() async {
-    var list = uploadedFiles.toList();
-    for (var (i, file) in uploadedFiles.indexed.where((v) => v.$2.isValidSize)) {
-      list[i].converting = convertPolygonFile(file.name, file.value);
-      var result = await list[i].converting;
+    final convertingFiles = uploadedFiles.where((v) => v.isValidSize && !v.isConverted);
+    for (var file in convertingFiles) {
+      file.converting = convertPolygonFile(file.name, file.value);
+      var result = await file.converting;
+      file.converting = null;
       file.task = result;
       notifyListeners();
     }

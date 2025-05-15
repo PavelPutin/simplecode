@@ -10,24 +10,25 @@ class UploadedFile {
   String name;
   DataSize sizeBytes;
   Uint8List? value;
-  Future<ConvertationResult?> _converting = Future.delayed(Duration.zero);
+  Future<ConvertationResult?>? _converting;
   ConvertationResult? _task;
 
   UploadedFile({
     required this.name,
     required this.sizeBytes,
-    this.value
   });
 
   bool get isValidSize => sizeBytes.value < maxFileSize;
+
+  bool get isConverted => _task != null;
 
   set task(ConvertationResult? value) {
     _task = value;
   }
 
-  Future<ConvertationResult?> get converting => _converting;
+  Future<ConvertationResult?>? get converting => _converting;
 
-  set converting(Future<ConvertationResult?> value) {
+  set converting(Future<ConvertationResult?>? value) {
     _converting = value;
   }
 
