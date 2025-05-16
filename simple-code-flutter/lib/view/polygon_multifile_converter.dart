@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_code/view/converting_uploaded_files_button.dart';
@@ -17,18 +18,65 @@ class PolygonMultiFileConverter extends StatefulWidget {
 class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
   late DropzoneViewController polygonMultiFileConverterController;
   Future<void> uploading = Future.delayed(Duration.zero);
+  TextEditingController testsAmountConstraintController = TextEditingController();
+  TextEditingController testSizeConstraintController = TextEditingController();
+
+  static const WidgetStateProperty<Icon> thumbIcon = WidgetStateProperty<Icon>.fromMap(
+    <WidgetStatesConstraint, Icon>{
+      WidgetState.selected: Icon(Icons.check),
+      WidgetState.any: Icon(Icons.close),
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<SimpleCodeViewModel>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Card(
+        Card(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: Row(
+            child: Column(
+              spacing: 10,
               children: [
+                Row(
+                  children: [
+                    Text("Ограничение количества тестов"),
+                    Switch(
+                        thumbIcon: thumbIcon,
+                        value: viewModel.hasTestsAmountConstraint,
+                        onChanged: (bool value) {
+                          context.read<SimpleCodeViewModel>().hasTestsAmountConstraint = value;
+                        }),
+                    if (viewModel.hasTestsAmountConstraint)
+                      Expanded(
+                        child: TextField(
+                          controller: testsAmountConstraintController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      )
+                  ],
+                ),
+                Row(children: [
+                  Text("Ограничение объёма теста"),
+                  Switch(
+                      thumbIcon: thumbIcon,
+                      value: viewModel.hasTestSizeConstraint,
+                      onChanged: (bool value) {
+                        context.read<SimpleCodeViewModel>().hasTestSizeConstraint = value;
+                      }),
+                  if (viewModel.hasTestSizeConstraint)
+                    Expanded(
+                      child: TextField(
+                        controller: testSizeConstraintController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      ),
+                    )
+                ]),
                 ConvertingUploadedFilesButton(),
               ],
             ),
@@ -43,8 +91,6 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const CircularProgressIndicator();
                   }
-
-                  final viewModel = context.watch<SimpleCodeViewModel>();
 
                   Widget dropzoneList;
                   if (viewModel.uploadedFiles.isEmpty) {

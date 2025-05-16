@@ -24,6 +24,24 @@ import '../model/utils.dart';
 class SimpleCodeViewModel extends ChangeNotifier {
   static const String emptyDaraPlaceholder = "Нет данных";
 
+  bool _hasTestsAmountConstraint = false;
+
+  bool get hasTestsAmountConstraint => _hasTestsAmountConstraint;
+
+  set hasTestsAmountConstraint(bool value) {
+    _hasTestsAmountConstraint = value;
+    notifyListeners();
+  }
+
+  bool _hasTestSizeConstraint = false;
+
+  bool get hasTestSizeConstraint => _hasTestSizeConstraint;
+
+  set hasTestSizeConstraint(bool value) {
+    _hasTestSizeConstraint = value;
+    notifyListeners();
+  }
+
   final List<UploadedFile> uploadedFiles = [];
 
   Future<void> uploadFile(DropzoneFileInterface file, DropzoneViewController controller) async {
