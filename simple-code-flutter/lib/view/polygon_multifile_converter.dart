@@ -1,10 +1,11 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
-import 'package:simple_code/model/utils.dart';
+import 'package:simple_code/view/converting_uploaded_files_button.dart';
+import 'package:simple_code/view/uploaded_file_list_tile.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
+
+import 'dropzone_default_field.dart';
 
 class PolygonMultiFileConverter extends StatefulWidget {
   const PolygonMultiFileConverter({super.key});
@@ -16,7 +17,6 @@ class PolygonMultiFileConverter extends StatefulWidget {
 class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
   late DropzoneViewController polygonMultiFileConverterController;
   Future<void> uploading = Future.delayed(Duration.zero);
-  Future<void> converting = Future.delayed(Duration.zero);
 
   @override
   Widget build(BuildContext context) {
@@ -24,29 +24,10 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Card(
+        const Card(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: FutureBuilder(
-                future: converting,
-                builder: (context, snapshot) {
-                  var loading = snapshot.connectionState != ConnectionState.done;
-
-                  return OutlinedButton(
-                      onPressed: () async {
-                        if (loading) return;
-
-                        setState(() {
-                          converting = context.read<SimpleCodeViewModel>().convertUploadedFiles();
-                        });
-                      },
-                      child: Row(
-                        children: [
-                          if (loading) const CircularProgressIndicator(),
-                          const Text("Конвертировать"),
-                        ],
-                      ));
-                }),
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            child: ConvertingUploadedFilesButton(),
           ),
         ),
         Card(
@@ -121,86 +102,5 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
         ),
       ],
     );
-  }
-}
-
-class UploadedFileListTile extends StatelessWidget {
-  const UploadedFileListTile({super.key, required this.index});
-
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    final viewModel = context.watch<SimpleCodeViewModel>();
-    Widget leading = viewModel.uploadedFiles[index].isValidSize
-        ? const Tooltip(message: "Успешно загружен", child: Icon(Icons.file_download_done))
-        : const Tooltip(message: "Слишком большой, максимальный размер 20 МиБ", child: Icon(Icons.error_outline, color: Colors.black26));
-
-    if (viewModel.uploadedFiles[index].isConverted) {
-      leading = const Tooltip(message: "Файл конвертирован", child: Icon(Icons.check_circle, color: Colors.green));
-    }
-
-    Widget? subtitle;
-    if (viewModel.uploadedFiles[index].isConverted) {
-      subtitle = Row(
-        spacing: 10,
-        children: [
-          RichText(
-              text: TextSpan(
-                text: "XML",
-                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()..onTap = () {
-                  var fileName = viewModel.uploadedFiles[index].name;
-                  fileName = getFileNameWithoutExtensionFromString(fileName);
-                  var sourceTask = viewModel.uploadedFiles[index].task!.task;
-                  var data = context.read<SimpleCodeViewModel>().createXmlDocument(sourceTask, []);
-                  downloadFile(fileName, "xml", data);
-                },
-              )
-          ),
-          RichText(
-              text: TextSpan(
-                text: "YAML",
-                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()..onTap = () {
-                  var fileName = viewModel.uploadedFiles[index].name;
-                  fileName = getFileNameWithoutExtensionFromString(fileName);
-                  var sourceTask = viewModel.uploadedFiles[index].task!.task;
-                  var data = context.read<SimpleCodeViewModel>().createYamlDocument(sourceTask);
-                  downloadFile(fileName, "yaml", data);
-                },
-              )
-          ),
-        ],
-      );
-    }
-
-    final color = viewModel.uploadedFiles[index].isValidSize ? Colors.transparent : Colors.grey;
-
-    return FutureBuilder(
-        future: viewModel.uploadedFiles[index].converting,
-        builder: (context, snapshot) {
-          if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
-            leading = const CircularProgressIndicator();
-          }
-          return ListTile(
-            leading: leading,
-            title: Text(viewModel.uploadedFiles[index].name),
-            subtitle: subtitle,
-            trailing: Text(viewModel.uploadedFiles[index].sizeBytes.toString()),
-            tileColor: color,
-          );
-        });
-  }
-}
-
-class DropzoneDefaultField extends StatelessWidget {
-  const DropzoneDefaultField({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(alignment: Alignment.center, child: const Text("Загрузите файл", textAlign: TextAlign.center));
   }
 }

@@ -505,11 +505,28 @@ class SimpleCodeViewModel extends ChangeNotifier {
     final convertingFiles = uploadedFiles.where((v) => v.isValidSize && !v.isConverted);
     for (var file in convertingFiles) {
       file.converting = convertPolygonFile(file.name, file.value);
+      notifyListeners();
       var result = await file.converting;
       file.converting = null;
       file.task = result;
       notifyListeners();
     }
+  }
+
+  void downloadXmlUploadedFile(UploadedFile file) {
+    var fileName = file.name;
+    fileName = getFileNameWithoutExtensionFromString(fileName);
+    var sourceTask = file.task!.task;
+    var data = createXmlDocument(sourceTask, []);
+    downloadFile(fileName, "xml", data);
+  }
+
+  void downloadYamlUploadedFile(UploadedFile file) {
+    var fileName = file.name;
+    fileName = getFileNameWithoutExtensionFromString(fileName);
+    var sourceTask = file.task!.task;
+    var data = createYamlDocument(sourceTask);
+    downloadFile(fileName, "yaml", data);
   }
 
   Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
