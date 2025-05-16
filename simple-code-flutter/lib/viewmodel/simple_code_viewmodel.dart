@@ -42,6 +42,15 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  DataSize? _testSizeConstraint;
+
+  DataSize? get testSizeConstraint => _testSizeConstraint;
+
+  set testSizeConstraint(DataSize? value) {
+    _testSizeConstraint = value;
+    notifyListeners();
+  }
+
   final List<UploadedFile> uploadedFiles = [];
 
   Future<void> uploadFile(DropzoneFileInterface file, DropzoneViewController controller) async {

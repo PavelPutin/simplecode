@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:provider/provider.dart';
+import 'package:simple_code/model/data_size.dart';
 import 'package:simple_code/view/converting_uploaded_files_button.dart';
 import 'package:simple_code/view/uploaded_file_list_tile.dart';
 import 'package:simple_code/viewmodel/simple_code_viewmodel.dart';
 
+import '../model/data_size_suffix.dart';
 import 'dropzone_default_field.dart';
 
 class PolygonMultiFileConverter extends StatefulWidget {
@@ -18,6 +20,7 @@ class PolygonMultiFileConverter extends StatefulWidget {
 class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
   late DropzoneViewController polygonMultiFileConverterController;
   Future<void> uploading = Future.delayed(Duration.zero);
+  DataSizeSuffix selectedDataSize = DataSizeSuffix.bytes;
   TextEditingController testsAmountConstraintController = TextEditingController();
   TextEditingController testSizeConstraintController = TextEditingController();
 
@@ -67,13 +70,31 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                       value: viewModel.hasTestSizeConstraint,
                       onChanged: (bool value) {
                         context.read<SimpleCodeViewModel>().hasTestSizeConstraint = value;
+                        context.read<SimpleCodeViewModel>().testSizeConstraint = null;
                       }),
                   if (viewModel.hasTestSizeConstraint)
                     Expanded(
-                      child: TextField(
-                        controller: testSizeConstraintController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: testSizeConstraintController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              onChanged: (value) {
+                                var size = int.parse(value);
+                                context.read<SimpleCodeViewModel>().testSizeConstraint = DataSize.fromValueAndDataSize(size, selectedDataSize);
+                              },
+                            ),
+                          ),
+                          DropdownMenu<DataSizeSuffix>(
+                            initialSelection: selectedDataSize,
+                            dropdownMenuEntries: DataSizeSuffix.values.map((e) => DropdownMenuEntry(value: e, label: e.name)).toList(),
+                            onSelected: (DataSizeSuffix? value) => setState(() {
+                              selectedDataSize = value ?? DataSizeSuffix.bytes;
+                            }),
+                          ),
+                        ],
                       ),
                     )
                 ]),
