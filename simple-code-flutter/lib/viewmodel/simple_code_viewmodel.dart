@@ -570,6 +570,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
     final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
+    if (testSizeConstraint != null) {
+      request.fields["testSizeConstraint"] = testSizeConstraint!.value.toString();
+    }
     request.files.add(http.MultipartFile.fromBytes("package", bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: fileName));
 
     var streamedResponse = await request.send();
