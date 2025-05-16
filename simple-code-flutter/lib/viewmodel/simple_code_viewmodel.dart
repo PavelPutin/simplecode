@@ -521,12 +521,24 @@ class SimpleCodeViewModel extends ChangeNotifier {
     downloadFile(fileName, "xml", data);
   }
 
+  void downloadXmlAllFiles() {
+    for (var file in uploadedFiles.where((f) => f.isConverted)) {
+      downloadXmlUploadedFile(file);
+    }
+  }
+
   void downloadYamlUploadedFile(UploadedFile file) {
     var fileName = file.name;
     fileName = getFileNameWithoutExtensionFromString(fileName);
     var sourceTask = file.task!.task;
     var data = createYamlDocument(sourceTask);
     downloadFile(fileName, "yaml", data);
+  }
+
+  void downloadYamlAllFiles() {
+    for (var file in uploadedFiles.where((f) => f.isConverted)) {
+      downloadYamlUploadedFile(file);
+    }
   }
 
   Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
@@ -696,4 +708,6 @@ class SimpleCodeViewModel extends ChangeNotifier {
   void selectImage(String imageName) {
     activeImageName = imageName;
   }
+
+  bool hasConvertedFiles() => uploadedFiles.where((f) => f.isConverted).isNotEmpty;
 }

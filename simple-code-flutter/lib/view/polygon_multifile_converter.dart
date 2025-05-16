@@ -27,7 +27,11 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
         const Card(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: ConvertingUploadedFilesButton(),
+            child: Row(
+              children: [
+                ConvertingUploadedFilesButton(),
+              ],
+            ),
           ),
         ),
         Card(
@@ -60,6 +64,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                   }
 
                   return Column(
+                    spacing: 10,
                     children: [
                       SizedBox.fromSize(
                         size: const Size.fromHeight(200),
@@ -94,6 +99,15 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                           ],
                         ),
                       ),
+                      if (context.watch<SimpleCodeViewModel>().hasConvertedFiles())
+                        Row(
+                          children: [
+                            OutlinedButton(
+                                onPressed: () => context.read<SimpleCodeViewModel>().downloadXmlAllFiles(), child: const Text("Скачать всё XML")),
+                            OutlinedButton(
+                                onPressed: () => context.read<SimpleCodeViewModel>().downloadYamlAllFiles(), child: const Text("Скачать всё YAML")),
+                          ],
+                        ),
                       dropzoneList
                     ],
                   );
