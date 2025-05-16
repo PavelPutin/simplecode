@@ -545,6 +545,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
     }
 
     var task = Task(name, questionText, defaultGrade, answer, testcases, {"customCode": ""});
+    task.images = images;
     return ConvertationResult(task, answerLanguage);
   }
 
