@@ -15,4 +15,15 @@ class DataSize {
   String toString() {
     return formatBytes(value);
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is DataSize) {
+      return value == other.value;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
 }

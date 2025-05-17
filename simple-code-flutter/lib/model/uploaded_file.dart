@@ -12,6 +12,8 @@ class UploadedFile {
   Uint8List? value;
   Future<ConvertationResult?>? _converting;
   ConvertationResult? _task;
+  DataSize? usedTestSizeConstraint;
+  bool isConverted = false;
 
   UploadedFile({
     required this.name,
@@ -20,7 +22,7 @@ class UploadedFile {
 
   bool get isValidSize => sizeBytes.value < maxFileSize;
 
-  bool get isConverted => _task != null;
+  bool get hasTask => _task != null;
 
   set task(ConvertationResult? value) {
     _task = value;

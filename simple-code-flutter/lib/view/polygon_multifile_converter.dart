@@ -70,7 +70,12 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                       value: viewModel.hasTestSizeConstraint,
                       onChanged: (bool value) {
                         context.read<SimpleCodeViewModel>().hasTestSizeConstraint = value;
-                        context.read<SimpleCodeViewModel>().testSizeConstraint = null;
+                        if (!value) {
+                          context.read<SimpleCodeViewModel>().testSizeConstraint = null;
+                        } else {
+                          final constraintValue = testSizeConstraintController.text;
+                          updateTestSizeConstraint(constraintValue, context);
+                        }
                       }),
                   if (viewModel.hasTestSizeConstraint)
                     Expanded(
@@ -82,8 +87,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                               onChanged: (value) {
-                                var size = int.parse(value);
-                                context.read<SimpleCodeViewModel>().testSizeConstraint = DataSize.fromValueAndDataSize(size, selectedDataSize);
+                                updateTestSizeConstraint(value, context);
                               },
                             ),
                           ),
@@ -92,6 +96,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                             dropdownMenuEntries: DataSizeSuffix.values.map((e) => DropdownMenuEntry(value: e, label: e.name)).toList(),
                             onSelected: (DataSizeSuffix? value) => setState(() {
                               selectedDataSize = value ?? DataSizeSuffix.bytes;
+                              updateTestSizeConstraint(testSizeConstraintController.text, context);
                             }),
                           ),
                         ],
@@ -183,5 +188,14 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
         ),
       ],
     );
+  }
+
+  void updateTestSizeConstraint(String value, BuildContext context) {
+    if (value.isNotEmpty) {
+      var size = int.parse(value);
+      context.read<SimpleCodeViewModel>().testSizeConstraint = DataSize.fromValueAndDataSize(size, selectedDataSize);
+    } else {
+      context.read<SimpleCodeViewModel>().testSizeConstraint = null;
+    }
   }
 }

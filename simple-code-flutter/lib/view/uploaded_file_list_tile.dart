@@ -21,7 +21,7 @@ class UploadedFileListTile extends StatelessWidget {
     }
 
     Widget? subtitle;
-    if (viewModel.uploadedFiles[index].isConverted) {
+    if (viewModel.uploadedFiles[index].hasTask) {
       subtitle = Row(
         spacing: 10,
         children: [
@@ -52,7 +52,6 @@ class UploadedFileListTile extends StatelessWidget {
     return FutureBuilder(
         future: viewModel.uploadedFiles[index].converting,
         builder: (context, snapshot) {
-          print(viewModel.uploadedFiles[index].converting);
           if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
             leading = const CircularProgressIndicator();
           }

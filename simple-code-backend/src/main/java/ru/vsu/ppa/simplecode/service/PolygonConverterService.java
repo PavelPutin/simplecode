@@ -18,6 +18,7 @@ import lombok.val;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
+import ru.vsu.ppa.simplecode.model.PolygonConvertSpecificationDto;
 import ru.vsu.ppa.simplecode.model.PolygonTestcase;
 import ru.vsu.ppa.simplecode.model.PolygonToCodeRunnerConversionResult;
 import ru.vsu.ppa.simplecode.model.ProgramSourceCode;
@@ -40,20 +41,22 @@ public class PolygonConverterService {
     /**
      * Converts a polygon package to a programming problem.
      *
-     * @param polygonPackage the multipart file representing the polygon package
+     * @param polygonPackage          the multipart file representing the polygon package
+     * @param convertSpecificationDto
      * @return the converted programming problem
      */
     @SneakyThrows(IOException.class)
-    public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage) {
+    public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(MultipartFile polygonPackage,
+                                                                                         PolygonConvertSpecificationDto convertSpecificationDto) {
         try (ZipFile zip = multipartResolver(polygonPackage)) {
             val polygonZipAccessObject = polygonZipAccessObjectProvider.getZipAccessObject(zip);
-            return getPolygonToCodeRunnerConversionResult(polygonZipAccessObject);
+            return getPolygonToCodeRunnerConversionResult(polygonZipAccessObject, convertSpecificationDto);
         }
     }
 
     @SneakyThrows
     private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(
-            PolygonZipAccessObject polygonZipAccessObject) {
+            PolygonZipAccessObject polygonZipAccessObject, PolygonConvertSpecificationDto convertSpecificationDto) {
         val statement = polygonZipAccessObject.extractStatement();
         log.debug("Statement: {}", statement);
 
@@ -66,11 +69,11 @@ public class PolygonConverterService {
         Map<String, ProgramSourceCode> generators = polygonZipAccessObject.extractGenerators();
         log.debug("Generators: {}", generators);
 
-        List<PolygonTestcase> testCases = polygonZipAccessObject.extractTestCases();
+        List<PolygonTestcase> preGeneratedTestCases = polygonZipAccessObject.extractTestCases();
 
         try (ForkJoinPool threadPool = new ForkJoinPool(8)) {
             threadPool.execute(() -> {
-                testCases.parallelStream().forEach(testCase -> {
+                preGeneratedTestCases.parallelStream().forEach(testCase -> {
                     log.debug("Test case: {}/{}",
                               testCase.getMetaInfo().testSetName(),
                               testCase.getMetaInfo().number() + 1);
@@ -81,7 +84,7 @@ public class PolygonConverterService {
                         testCase.setStdin(stdin);
                     } catch (TestCaseGenerationException e) {
                         testCase.setStdinGenerationError(e.getRunSpec());
-                        testCase.setExpected(null);
+                        testCase.setStdin(null);
                     }
 
                     try {
@@ -95,6 +98,11 @@ public class PolygonConverterService {
                 });
             });
         }
+
+        List<PolygonTestcase> testCases = preGeneratedTestCases.stream()
+                .filter(testCase -> testCase.getStdin() != null && testCase.getExpected() != null)
+                .filter(testCase -> checkSize(convertSpecificationDto, testCase))
+                .toList();
 
         List<RunSpec> stdinGenerationErrors = testCases.stream()
                 .map(PolygonTestcase::getStdinGenerationError)
@@ -126,6 +134,13 @@ public class PolygonConverterService {
         );
         log.debug("Problem statement HTML: {}", problem.statement());
         return new PolygonToCodeRunnerConversionResult(problem, stdinGenerationErrors, expectedGenerationErrors);
+    }
+
+    private static boolean checkSize(PolygonConvertSpecificationDto convertSpecificationDto,
+                                      PolygonTestcase testCase) {
+        return convertSpecificationDto.testSizeConstraintBytes() == null
+                || testCase.getStdin().getBytes().length + testCase.getExpected().getBytes().length
+                < convertSpecificationDto.testSizeConstraintBytes();
     }
 
     private String generateStdin(PolygonTestcase testCase,

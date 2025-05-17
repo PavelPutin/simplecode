@@ -48,6 +48,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
 
   set testSizeConstraint(DataSize? value) {
     _testSizeConstraint = value;
+    for (var f in uploadedFiles) {
+      f.isConverted = f.hasTask && f.usedTestSizeConstraint == value;
+    }
     notifyListeners();
   }
 
@@ -536,6 +539,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
       var result = await file.converting;
       file.converting = null;
       file.task = result;
+      file.isConverted = true;
+      file.usedTestSizeConstraint = testSizeConstraint;
       notifyListeners();
     }
   }
@@ -549,7 +554,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void downloadXmlAllFiles() {
-    for (var file in uploadedFiles.where((f) => f.isConverted)) {
+    for (var file in uploadedFiles.where((f) => f.hasTask)) {
       downloadXmlUploadedFile(file);
     }
   }
@@ -563,7 +568,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   void downloadYamlAllFiles() {
-    for (var file in uploadedFiles.where((f) => f.isConverted)) {
+    for (var file in uploadedFiles.where((f) => f.hasTask)) {
       downloadYamlUploadedFile(file);
     }
   }
@@ -739,5 +744,5 @@ class SimpleCodeViewModel extends ChangeNotifier {
     activeImageName = imageName;
   }
 
-  bool hasConvertedFiles() => uploadedFiles.where((f) => f.isConverted).isNotEmpty;
+  bool hasConvertedFiles() => uploadedFiles.where((f) => f.hasTask).isNotEmpty;
 }
