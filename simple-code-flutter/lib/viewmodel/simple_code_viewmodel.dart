@@ -761,4 +761,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   bool hasConvertedFiles() => uploadedFiles.where((f) => f.hasTask).isNotEmpty;
+
+  void deleteUploadedFile(UploadedFile uploadedFile) {
+    uploadedFiles.remove(uploadedFile);
+    notifyListeners();
+  }
 }

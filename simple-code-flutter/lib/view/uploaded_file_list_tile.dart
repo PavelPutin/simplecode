@@ -29,18 +29,20 @@ class UploadedFileListTile extends StatelessWidget {
               text: TextSpan(
                 text: "XML",
                 style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()..onTap = () {
-                  context.read<SimpleCodeViewModel>().downloadXmlUploadedFile(viewModel.uploadedFiles[index]);
-                },
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    context.read<SimpleCodeViewModel>().downloadXmlUploadedFile(viewModel.uploadedFiles[index]);
+                  },
               )
           ),
           RichText(
               text: TextSpan(
                 text: "YAML",
                 style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()..onTap = () {
-                  context.read<SimpleCodeViewModel>().downloadYamlUploadedFile(viewModel.uploadedFiles[index]);
-                },
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    context.read<SimpleCodeViewModel>().downloadYamlUploadedFile(viewModel.uploadedFiles[index]);
+                  },
               )
           ),
         ],
@@ -52,14 +54,21 @@ class UploadedFileListTile extends StatelessWidget {
     return FutureBuilder(
         future: viewModel.uploadedFiles[index].converting,
         builder: (context, snapshot) {
-          if (!(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none)) {
+          final loading = !(snapshot.connectionState == ConnectionState.done || snapshot.connectionState == ConnectionState.none);
+          if (loading) {
             leading = const CircularProgressIndicator();
           }
           return ListTile(
             leading: leading,
-            title: Text(viewModel.uploadedFiles[index].name),
+            title: Text("${viewModel.uploadedFiles[index].name} (${viewModel.uploadedFiles[index].sizeBytes.toString()})"),
             subtitle: subtitle,
-            trailing: Text(viewModel.uploadedFiles[index].sizeBytes.toString()),
+            trailing: IconButton(
+                icon: Icon(Icons.delete, color: loading ? Colors.grey : Colors.red),
+                onPressed: () {
+                  if (loading) return;
+                  context.read<SimpleCodeViewModel>().deleteUploadedFile(viewModel.uploadedFiles[index]);
+                }
+            ),
             tileColor: color,
           );
         });
