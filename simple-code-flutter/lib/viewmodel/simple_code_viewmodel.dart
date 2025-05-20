@@ -86,7 +86,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  final Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
+  Task _task = Task("", "", "", "", [Testcase("", "", true)], {});
 
   Task get task => _task;
 
@@ -96,6 +96,10 @@ class SimpleCodeViewModel extends ChangeNotifier {
     _task.answer = value.answer;
     _task.testcases = value.testcases;
     _task.testGenerator = value.testGenerator;
+    _task.images = value.images;
+    _updateYamlData();
+    _updateXmlData();
+    notifyListeners();
   }
 
   set questionText(String? value) {
@@ -472,7 +476,11 @@ class SimpleCodeViewModel extends ChangeNotifier {
     });
 
     final document = builder.buildDocument();
-    return document.toXmlString(pretty: true, indent: "    ");
+    final result = document.toXmlString(pretty: true, indent: "    ");
+    if (utf8.encode(result).length > 5 * 1024 * 1024) {
+      throw "File too big";
+    }
+    return result;
   }
 
   /// throws
@@ -765,5 +773,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
   void deleteUploadedFile(UploadedFile uploadedFile) {
     uploadedFiles.remove(uploadedFile);
     notifyListeners();
+  }
+
+  void selectUploadedFile(UploadedFile uploadedFile) {
+    task = uploadedFile.task!.task;
   }
 }

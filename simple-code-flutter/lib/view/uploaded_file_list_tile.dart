@@ -70,6 +70,16 @@ class UploadedFileListTile extends StatelessWidget {
                 }
             ),
             tileColor: color,
+            onTap: () {
+              if (loading || !viewModel.uploadedFiles[index].hasTask) return;
+              try {
+                context.read<SimpleCodeViewModel>().selectUploadedFile(viewModel.uploadedFiles[index]);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(duration: Duration(seconds: 1), content: Text('Задача слишком большая: размер более 5 МиБ')),
+                );
+              }
+            },
           );
         });
   }
