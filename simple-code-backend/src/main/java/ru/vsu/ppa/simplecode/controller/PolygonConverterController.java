@@ -28,9 +28,9 @@ public class PolygonConverterController {
     @PostMapping()
     public PolygonToCodeRunnerConversionResult convertPolygonPackageToProgrammingProblem(
             @RequestParam(value = "testSizeConstraint", required = false) Integer testSizeConstraint,
+            @RequestParam(value = "testsAmountConstraint", required = false) Integer testsAmountConstraint,
             @RequestParam("package") MultipartFile polygonPackage) {
-        System.out.println("!!! test size constraint " + testSizeConstraint);
-        var convertSpecificationDto = new PolygonConvertSpecificationDto(testSizeConstraint);
+        var convertSpecificationDto = new PolygonConvertSpecificationDto(testSizeConstraint, testsAmountConstraint);
         return polygonConverterService.convertPolygonPackageToProgrammingProblem(polygonPackage, convertSpecificationDto);
     }
 

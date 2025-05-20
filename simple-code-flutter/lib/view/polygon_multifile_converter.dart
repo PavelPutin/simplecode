@@ -40,18 +40,24 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
       children: [
         Card(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
             child: Column(
               spacing: 10,
               children: [
                 Row(
                   children: [
-                    Text("Ограничение количества тестов"),
+                    const Text("Ограничение количества тестов"),
                     Switch(
                         thumbIcon: thumbIcon,
                         value: viewModel.hasTestsAmountConstraint,
                         onChanged: (bool value) {
                           context.read<SimpleCodeViewModel>().hasTestsAmountConstraint = value;
+                          if (!value) {
+                            context.read<SimpleCodeViewModel>().testsAmountConstraint = null;
+                          } else {
+                            final constraintValue = testsAmountConstraintController.text;
+                            updateTestsAmountConstraint(constraintValue, context);
+                          }
                         }),
                     if (viewModel.hasTestsAmountConstraint)
                       Expanded(
@@ -59,12 +65,13 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                           controller: testsAmountConstraintController,
                           keyboardType: TextInputType.number,
                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) => updateTestsAmountConstraint(value, context),
                         ),
                       )
                   ],
                 ),
                 Row(children: [
-                  Text("Ограничение объёма теста"),
+                  const Text("Ограничение объёма теста"),
                   Switch(
                       thumbIcon: thumbIcon,
                       value: viewModel.hasTestSizeConstraint,
@@ -86,9 +93,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                               controller: testSizeConstraintController,
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                              onChanged: (value) {
-                                updateTestSizeConstraint(value, context);
-                              },
+                              onChanged: (value) => updateTestSizeConstraint(value, context),
                             ),
                           ),
                           DropdownMenu<DataSizeSuffix>(
@@ -103,7 +108,7 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                       ),
                     )
                 ]),
-                ConvertingUploadedFilesButton(),
+                const ConvertingUploadedFilesButton(),
               ],
             ),
           ),
@@ -156,12 +161,11 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
                                 onCreated: (ctrl) => polygonMultiFileConverterController = ctrl,
                                 onDropFiles: (files) {
                                   if (files == null) {
-                                    print("No files");
+                                    return;
                                   }
                                   var uploadingFiles = files
-                                          ?.map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
-                                          .toList() ??
-                                      List.empty();
+                                          .map((f) => context.read<SimpleCodeViewModel>().uploadFile(f, polygonMultiFileConverterController))
+                                          .toList();
                                   setState(() {
                                     uploading = Future.wait(uploadingFiles);
                                   });
@@ -196,6 +200,15 @@ class _PolygonMultiFileConverterState extends State<PolygonMultiFileConverter> {
       context.read<SimpleCodeViewModel>().testSizeConstraint = DataSize.fromValueAndDataSize(size, selectedDataSize);
     } else {
       context.read<SimpleCodeViewModel>().testSizeConstraint = null;
+    }
+  }
+
+  void updateTestsAmountConstraint(String value, BuildContext context) {
+    if (value.isNotEmpty) {
+      var amount = int.parse(value);
+      context.read<SimpleCodeViewModel>().testsAmountConstraint = amount;
+    } else {
+      context.read<SimpleCodeViewModel>().testsAmountConstraint = null;
     }
   }
 }

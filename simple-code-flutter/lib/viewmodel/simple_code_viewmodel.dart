@@ -33,6 +33,18 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  int? _testsAmountConstraint;
+
+  int? get testsAmountConstraint => _testsAmountConstraint;
+
+  set testsAmountConstraint(int? value) {
+    _testsAmountConstraint = value;
+    for (var f in uploadedFiles) {
+      f.isConverted = f.hasTask && f.testsAmount == value;
+    }
+    notifyListeners();
+  }
+
   bool _hasTestSizeConstraint = false;
 
   bool get hasTestSizeConstraint => _hasTestSizeConstraint;
@@ -541,6 +553,7 @@ class SimpleCodeViewModel extends ChangeNotifier {
       file.task = result;
       file.isConverted = true;
       file.usedTestSizeConstraint = testSizeConstraint;
+      file.testsAmount = testsAmountConstraint;
       notifyListeners();
     }
   }
@@ -577,6 +590,9 @@ class SimpleCodeViewModel extends ChangeNotifier {
     final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
     if (testSizeConstraint != null) {
       request.fields["testSizeConstraint"] = testSizeConstraint!.value.toString();
+    }
+    if (testsAmountConstraint != null) {
+      request.fields["testsAmountConstraint"] = testsAmountConstraint.toString();
     }
     request.files.add(http.MultipartFile.fromBytes("package", bytes!.toList(), contentType: MediaType("multipart", "form-data"), filename: fileName));
 

@@ -99,9 +99,13 @@ public class PolygonConverterService {
             });
         }
 
+        int testCasesAmount = convertSpecificationDto.testsAmountConstraint() != null
+                              ? convertSpecificationDto.testsAmountConstraint()
+                              : preGeneratedTestCases.size();
         List<PolygonTestcase> testCases = preGeneratedTestCases.stream()
                 .filter(testCase -> testCase.getStdin() != null && testCase.getExpected() != null)
                 .filter(testCase -> checkSize(convertSpecificationDto, testCase))
+                .limit(testCasesAmount)
                 .toList();
 
         List<RunSpec> stdinGenerationErrors = testCases.stream()

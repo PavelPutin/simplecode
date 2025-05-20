@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:simple_code/model/convertation_result.dart';
-import 'package:simple_code/model/task.dart';
 
 import 'data_size.dart';
 
@@ -12,6 +11,7 @@ class UploadedFile {
   Uint8List? value;
   Future<ConvertationResult?>? _converting;
   ConvertationResult? _task;
+  int? testsAmount;
   DataSize? usedTestSizeConstraint;
   bool isConverted = false;
 
