@@ -109,6 +109,25 @@ class SimpleCodeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  set taskName(String? value) {
+    task.name = value ?? "";
+    _updateXmlData();
+    _updateYamlData();
+    notifyListeners();
+  }
+
+  set taskDefaultGrade(String? value) {
+    if (value == null || value.isEmpty || int.tryParse(value) == null) {
+      task.defaultGrade = "0";
+    } else {
+      task.defaultGrade = value;
+    }
+    _updateXmlData();
+    _updateYamlData();
+    notifyListeners();
+  }
+
+
   int _generatedTestsAmount = 1;
 
   int get generatedTestsAmount => _generatedTestsAmount;

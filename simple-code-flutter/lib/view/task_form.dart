@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_highlight/themes/monokai.dart';
 import 'package:flutter_tex/flutter_tex.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
@@ -76,11 +77,10 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
-    nameController.text = context.watch<SimpleCodeViewModel>().task.name;
-    String question = context.watch<SimpleCodeViewModel>().task.questionText;
+    nameController.value = TextEditingValue(text: context.watch<SimpleCodeViewModel>().task.name, selection: nameController.selection);
+    gradeController.value = TextEditingValue(text: context.watch<SimpleCodeViewModel>().task.defaultGrade, selection: gradeController.selection);
+    answerController.value = CodeLineEditingValue(codeLines: CodeLines.fromText(context.watch<SimpleCodeViewModel>().task.answer));
 
-    gradeController.text = context.watch<SimpleCodeViewModel>().task.defaultGrade;
-    answerController.text = context.watch<SimpleCodeViewModel>().task.answer;
     var testcases = Provider.of<SimpleCodeViewModel>(context, listen: false).task.testcases;
     if (testcases.isNotEmpty) {
       testsNumber = testcases.length;
@@ -220,8 +220,9 @@ class _TaskFormState extends State<TaskForm> {
                 margin: const EdgeInsets.only(bottom: 30),
                 child: TextFormField(
                   controller: gradeController,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: (value) {
-                    context.read<SimpleCodeViewModel>().task.defaultGrade = value;
+                    context.read<SimpleCodeViewModel>().taskDefaultGrade = value;
                   },
                   decoration: const InputDecoration(border: OutlineInputBorder(), labelText: "Оценка*", filled: true, fillColor: Colors.white),
                   validator: (value) {
@@ -503,7 +504,7 @@ class NameTextField extends StatelessWidget {
     return TextFormField(
       controller: nameController,
       onChanged: (value) {
-        context.read<SimpleCodeViewModel>().task.name = value;
+        context.read<SimpleCodeViewModel>().taskName = value;
       },
       decoration: const InputDecoration(border: OutlineInputBorder(), labelText: "Название*", filled: true, fillColor: Colors.white),
       validator: (value) {
