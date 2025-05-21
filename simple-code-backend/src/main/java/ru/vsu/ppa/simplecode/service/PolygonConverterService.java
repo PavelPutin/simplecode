@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
@@ -70,35 +74,40 @@ public class PolygonConverterService {
         log.debug("Generators: {}", generators);
 
         List<PolygonTestcase> preGeneratedTestCases = polygonZipAccessObject.extractTestCases();
+        List<Future<Void>> testsJobs;
 
-        try (ForkJoinPool threadPool = new ForkJoinPool(8)) {
-            threadPool.execute(() -> {
-                preGeneratedTestCases.parallelStream().forEach(testCase -> {
-                    log.debug("Test case: {}/{}",
-                              testCase.getMetaInfo().testSetName(),
-                              testCase.getMetaInfo().number() + 1);
+        try (var testExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Callable<Void>> jobs = preGeneratedTestCases.stream()
+                    .map(testCase -> (Callable<Void>) () -> {
+                        log.debug("Test case: {}/{}",
+                                  testCase.getMetaInfo().testSetName(),
+                                  testCase.getMetaInfo().number() + 1);
 
-                    try {
-                        String stdin = polygonZipAccessObject.extractStdin(testCase)
-                                .orElseGet(() -> generateStdin(testCase, generators));
-                        testCase.setStdin(stdin);
-                    } catch (TestCaseGenerationException e) {
-                        testCase.setStdinGenerationError(e.getRunSpec());
-                        testCase.setStdin(null);
-                    }
+                        try {
+                            String stdin = polygonZipAccessObject.extractStdin(testCase)
+                                    .orElseGet(() -> generateStdin(testCase, generators));
+                            testCase.setStdin(stdin);
+                        } catch (TestCaseGenerationException e) {
+                            testCase.setStdinGenerationError(e.getRunSpec());
+                            testCase.setStdin(null);
+                        }
 
-                    try {
-                        String expected = polygonZipAccessObject.extractExpected(testCase)
-                                .orElseGet(() -> generateExpected(testCase, mainSolution));
-                        testCase.setExpected(expected);
-                    } catch (TestCaseGenerationException e) {
-                        testCase.setExpectedGenerationError(e.getRunSpec());
-                        testCase.setExpected(null);
-                    }
-                });
-            });
+                        try {
+                            String expected = polygonZipAccessObject.extractExpected(testCase)
+                                    .orElseGet(() -> generateExpected(testCase, mainSolution));
+                            testCase.setExpected(expected);
+                        } catch (TestCaseGenerationException e) {
+                            testCase.setExpectedGenerationError(e.getRunSpec());
+                            testCase.setExpected(null);
+                        }
+                        return null;
+                    }).toList();
+            testsJobs = testExecutor.invokeAll(jobs);
         }
 
+        for (var job : testsJobs) {
+            job.get();
+        }
         int testCasesAmount = convertSpecificationDto.testsAmountConstraint() != null
                               ? convertSpecificationDto.testsAmountConstraint()
                               : preGeneratedTestCases.size();
@@ -118,7 +127,7 @@ public class PolygonConverterService {
                 .toList();
 
         log.debug("Test cases ({}):", testCases.size());
-        testCases.forEach(testCase -> log.debug("Test case: {}", testCase));
+        testCases.forEach(testCase -> log.trace("Test case: {}", testCase));
 
         log.debug("Stdin generation errors ({}):", stdinGenerationErrors.size());
         stdinGenerationErrors.forEach(log::debug);
@@ -170,10 +179,10 @@ public class PolygonConverterService {
                 result = jobeInABoxService.submitRun(runSpec);
             } catch (JobeFileNotFoundException e) {
                 jobeInABoxService.putFile(testLibHeaderFile);
-                log.debug("Put file (stdin generation) {}", testLibHeaderFile);
+                log.trace("Put file (stdin generation) {}", testLibHeaderFile);
                 result = jobeInABoxService.submitRun(runSpec);
             }
-            log.debug("Generate stdin value: {}", result);
+            log.trace("Generate stdin value: {}", result);
             return result;
         } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new TestCaseGenerationException(runSpec);
@@ -197,10 +206,10 @@ public class PolygonConverterService {
                 result = jobeInABoxService.submitRun(runSpec);
             } catch (JobeFileNotFoundException e) {
                 jobeInABoxService.putFile(testLibHeaderFile);
-                log.debug("Put file (expected generation) {}", testLibHeaderFile);
+                log.trace("Put file (expected generation) {}", testLibHeaderFile);
                 result = jobeInABoxService.submitRun(runSpec);
             }
-            log.debug("Generate expected value: {}", result);
+            log.trace("Generate expected value: {}", result);
             return result;
         }  catch (ExecutionException | InterruptedException | JsonProcessingException e) {
             throw new TestCaseGenerationException(runSpec);

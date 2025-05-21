@@ -3,13 +3,16 @@ package ru.vsu.ppa.simplecode.configuration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
+import java.util.concurrent.Semaphore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
@@ -59,6 +62,7 @@ public class AppConfiguration {
      * @throws ParserConfigurationException if a DocumentBuilder cannot be created
      */
     @Bean
+    @Scope(BeanDefinition.SCOPE_PROTOTYPE)
     public DocumentBuilder xmlDocumentBuilder() throws ParserConfigurationException {
         val factory = DocumentBuilderFactory.newInstance();
         return factory.newDocumentBuilder();
@@ -83,5 +87,10 @@ public class AppConfiguration {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Bean
+    public Semaphore jobeRunsSemaphore() {
+        return new Semaphore(9, true);
     }
 }

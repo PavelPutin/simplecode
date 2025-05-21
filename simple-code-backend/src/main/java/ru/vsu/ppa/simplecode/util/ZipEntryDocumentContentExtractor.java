@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
@@ -24,10 +26,11 @@ public class ZipEntryDocumentContentExtractor extends ZipEntryContentExtractor<D
     @Override
     protected Document getContent(InputStream is) throws IOException {
         try {
+            var xmlDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document document = xmlDocumentBuilder.parse(is);
             document.getDocumentElement().normalize();
             return document;
-        } catch (SAXException e) {
+        } catch (SAXException | ParserConfigurationException e) {
             throw new RuntimeException(e);
         }
     }

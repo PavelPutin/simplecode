@@ -573,16 +573,16 @@ class SimpleCodeViewModel extends ChangeNotifier {
   Future<void> convertUploadedFiles() async {
     final convertingFiles = uploadedFiles.where((v) => v.isValidSize && !v.isConverted);
     for (var file in convertingFiles) {
-      file.converting = convertPolygonFile(file.name, file.value);
-      notifyListeners();
-      var result = await file.converting;
-      file.converting = null;
-      file.task = result;
-      file.isConverted = true;
-      file.usedTestSizeConstraint = testSizeConstraint;
-      file.testsAmount = testsAmountConstraint;
-      notifyListeners();
+      file.converting = convertPolygonFile(file.name, file.value).then((result) {
+        file.converting = null;
+        file.task = result;
+        file.isConverted = true;
+        file.usedTestSizeConstraint = testSizeConstraint;
+        file.testsAmount = testsAmountConstraint;
+        notifyListeners();
+      });
     }
+    notifyListeners();
   }
 
   void downloadXmlUploadedFile(UploadedFile file) {

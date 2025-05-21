@@ -3,6 +3,7 @@ package ru.vsu.ppa.simplecode.service;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -23,6 +24,7 @@ import ru.vsu.ppa.simplecode.model.RunSpec;
 public class JobeInABoxService {
 
     private final RestClient jobeRestClient;
+    private final Semaphore jobeRunsSemaphore;
 
     /**
      * Submits a run specification to the Jobe REST client and returns the standard output of the run.
@@ -34,11 +36,13 @@ public class JobeInABoxService {
      * @throws JsonProcessingException if an error occurs during JSON processing
      */
     public String submitRun(RunSpec runSpec) throws ExecutionException, InterruptedException, JsonProcessingException {
+        jobeRunsSemaphore.acquire();
         val runResult = jobeRestClient.post().uri("/runs").contentType(MediaType.APPLICATION_JSON)
                 .body(runSpec)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, this::clientErrorsHandler)
                 .onStatus(HttpStatusCode::is5xxServerError, this::unknownErrorsHandler).body(RunResult.class);
+        jobeRunsSemaphore.release();
 
         if (runResult == null) {
             throw new RuntimeException("Empty response");
