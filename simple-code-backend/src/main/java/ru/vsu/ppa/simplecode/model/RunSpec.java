@@ -1,11 +1,14 @@
 package ru.vsu.ppa.simplecode.model;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.springframework.util.unit.DataSize;
 
 @JsonTypeName("run_spec")
 @JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
@@ -18,6 +21,11 @@ public record RunSpec(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Parameters(
+            @JsonProperty(value = "disklimit", defaultValue = "20") Long diskLimit,
+            @JsonProperty(value = "streamsize", defaultValue = "2") Long streamSize,
+            @JsonProperty(value = "cputime", defaultValue = "5") Long cpuTime,
+            @JsonProperty(value = "memorylimit", defaultValue = "400") Long memoryLimit,
+            @JsonProperty(value = "numprocs", defaultValue = "20") Integer numberOfProcesses,
             @JsonProperty("runargs") List<String> runArguments,
             @JsonProperty("compileargs") List<String> compileArgs) {}
 
@@ -37,6 +45,16 @@ public record RunSpec(
 
         OptionalSetter files(JobeRunAssetFile... file);
 
+        OptionalSetter diskLimit(DataSize diskLimit);
+
+        OptionalSetter streamSize(DataSize streamSize);
+
+        OptionalSetter cpuTime(Duration cpuTime);
+
+        OptionalSetter memoryLimit(DataSize memoryLimit);
+
+        OptionalSetter numberOfProcesses(int numberOfProcesses);
+
         OptionalSetter runArgs(String... runArg);
 
         OptionalSetter compileArgs(String... compileArg);
@@ -53,6 +71,11 @@ public record RunSpec(
         private String languageId;
         private String sourceCode;
         private String input;
+        private Long diskLimit;
+        private Long streamSize;
+        private Long cpuTime;
+        private Long memoryLimit;
+        private Integer numberOfProcesses;
         private List<List<String>> files;
         private List<String> runArguments;
         private List<String> compileArgs;
@@ -82,6 +105,36 @@ public record RunSpec(
         }
 
         @Override
+        public OptionalSetter diskLimit(DataSize diskLimit) {
+            this.diskLimit = diskLimit.toMegabytes();
+            return this;
+        }
+
+        @Override
+        public OptionalSetter streamSize(DataSize streamSize) {
+            this.streamSize = streamSize.toMegabytes();
+            return this;
+        }
+
+        @Override
+        public OptionalSetter cpuTime(Duration cpuTime) {
+            this.cpuTime = cpuTime.toSeconds();
+            return this;
+        }
+
+        @Override
+        public OptionalSetter memoryLimit(DataSize memoryLimit) {
+            this.memoryLimit = memoryLimit.toMegabytes();
+            return this;
+        }
+
+        @Override
+        public OptionalSetter numberOfProcesses(int numberOfProcesses) {
+            this.numberOfProcesses = numberOfProcesses;
+            return this;
+        }
+
+        @Override
         public OptionalSetter runArgs(String... runArg) {
             this.runArguments = Arrays.asList(runArg);
             return this;
@@ -100,7 +153,15 @@ public record RunSpec(
                     sourceCode,
                     input,
                     files,
-                    new Parameters(runArguments, compileArgs)
+                    new Parameters(
+                            diskLimit,
+                            streamSize,
+                            cpuTime,
+                            memoryLimit,
+                            numberOfProcesses,
+                            runArguments,
+                            compileArgs
+                    )
             );
         }
     }

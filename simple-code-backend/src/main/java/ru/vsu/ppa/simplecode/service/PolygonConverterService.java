@@ -3,6 +3,7 @@ package ru.vsu.ppa.simplecode.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import ru.vsu.ppa.simplecode.model.JobeRunAssetFile;
 import ru.vsu.ppa.simplecode.model.PolygonConvertSpecificationDto;
@@ -172,6 +175,7 @@ public class PolygonConverterService {
                 .files(testLibHeaderFile)
                 .runArgs(args.toArray(new String[0]))
                 .compileArgs("-w")
+                .cpuTime(Duration.ofSeconds(20))
                 .build();
         try {
             String result;
@@ -199,6 +203,8 @@ public class PolygonConverterService {
                 .input(testCase.getStdin())
                 .files(testLibHeaderFile)
                 .compileArgs("-w")
+                .memoryLimit(DataSize.ofMegabytes(1024))
+                .cpuTime(Duration.ofSeconds(20))
                 .build();
         try {
             String result;

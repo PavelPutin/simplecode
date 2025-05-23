@@ -56,6 +56,6 @@ application:
 
 jobe:
   client:
-    timeout: 10s
+    timeout: 20s
     base-url: http://localhost:8081/jobe/index.php/restapi
     max-errors-in-row: 5

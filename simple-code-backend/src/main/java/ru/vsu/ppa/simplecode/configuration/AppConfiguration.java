@@ -91,6 +91,6 @@ public class AppConfiguration {
 
     @Bean
     public Semaphore jobeRunsSemaphore() {
-        return new Semaphore(9, true);
+        return new Semaphore(12, true);
     }
 }
