@@ -64,12 +64,6 @@ public class PolygonConverterService {
     @SneakyThrows
     private PolygonToCodeRunnerConversionResult getPolygonToCodeRunnerConversionResult(
             PolygonZipAccessObject polygonZipAccessObject, PolygonConvertSpecificationDto convertSpecificationDto) {
-        val statement = polygonZipAccessObject.extractStatement();
-        log.debug("Statement: {}", statement);
-
-        List<StatementFile> images = polygonZipAccessObject.extractImagesFromStatement(statement);
-        log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
-
         val mainSolution = polygonZipAccessObject.extractMainSolution();
         log.debug("Main solution: {}", mainSolution);
 
@@ -107,6 +101,12 @@ public class PolygonConverterService {
                     }).toList();
             testsJobs = testExecutor.invokeAll(jobs);
         }
+
+        val statement = polygonZipAccessObject.extractStatement();
+        log.debug("Statement: {}", statement);
+
+        List<StatementFile> images = polygonZipAccessObject.extractImagesFromStatement(statement);
+        log.debug("Images: {}", images.stream().map(StatementFile::name).toList());
 
         for (var job : testsJobs) {
             job.get();
