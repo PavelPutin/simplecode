@@ -89,4 +89,4 @@ COPY --from=extract build/target/extracted/application/ ./
 
 EXPOSE 8080
 
-ENTRYPOINT [ "java", "org.springframework.boot.loader.launch.JarLauncher" "--debug" ]
+ENTRYPOINT [ "java", "org.springframework.boot.loader.launch.JarLauncher", "--debug" ]

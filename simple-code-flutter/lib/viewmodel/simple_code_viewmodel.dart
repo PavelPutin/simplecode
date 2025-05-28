@@ -268,7 +268,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
       "task": requestTask
     };
 
-    final response = await http.post(Uri.parse("http://localhost:8080/v1/runs"),
+    const apiUrl = String.fromEnvironment("API_RUNS", defaultValue: "http://localhost:8080/v1/runs");
+    final response = await http.post(Uri.parse(apiUrl),
         headers: <String, String>{'Content-Type': 'application/json; charset=UTF-8'}, body: jsonEncode(request));
 
     if (response.statusCode == 200) {
@@ -614,7 +615,8 @@ class SimpleCodeViewModel extends ChangeNotifier {
   }
 
   Future<ConvertationResult> convertPolygonFile(String fileName, Uint8List? bytes) async {
-    final request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/v1/polygon-converter"));
+    const apiUrl = String.fromEnvironment("API_CONVERT", defaultValue: "http://localhost:8080/v1/polygon-converter");
+    final request = http.MultipartRequest("POST", Uri.parse(apiUrl));
     if (testSizeConstraint != null) {
       request.fields["testSizeConstraint"] = testSizeConstraint!.value.toString();
     }
